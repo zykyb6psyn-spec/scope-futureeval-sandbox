@@ -1,0 +1,17 @@
+{
+  "schema_version": "1.0",
+  "status": "NOT_FROZEN",
+  "scored_run_enabled": false,
+  "purpose": "Gate file for future scored FutureEval validation. A scored run is forbidden until this document is explicitly frozen before exposure to the target question set.",
+  "frozen_at_utc": null,
+  "target_cycle": null,
+  "target_tournament_or_minibench": null,
+  "information_cutoff_utc": null,
+  "sandbox_version": null,
+  "git_commit_sha": null,
+  "config_sha256": null,
+  "code_sha256": null,
+  "dependency_lock_sha256": null,
+  "metrics": [],
+  "notes": "The current sandbox may only use bot-testing-area for technical smoke tests. This file must not be retroactively filled after viewing scored outcomes."
+}
