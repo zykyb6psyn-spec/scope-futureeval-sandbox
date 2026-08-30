@@ -1,0 +1,70 @@
+name: SCOPE Benchmark Paired Dry Run
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - scope-benchmark-design-v0.1
+    paths:
+      - "benchmark/**"
+      - ".github/workflows/scope_benchmark_paired_dryrun.yaml"
+
+permissions:
+  contents: read
+
+jobs:
+  paired_dryrun:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      PYTHONHASHSEED: "0"
+      TZ: UTC
+      SCOPE_RUN_KIND: paired-benchmark-dryrun
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: "3.11.16"
+          check-latest: false
+
+      - name: Install Poetry
+        uses: snok/install-poetry@a783c322200f0519c7926aa6faa857c4e23e9263
+        with:
+          version: "2.4.2"
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install locked dependencies
+        run: poetry sync --no-interaction --no-root
+
+      - name: Syntax preflight
+        run: |
+          poetry run python -m py_compile \
+            benchmark/scope_benchmark_freeze_check.py \
+            benchmark/scope_structured_bot.py \
+            benchmark/scope_paired_dryrun.py
+
+      - name: Verify design gates remain closed
+        run: poetry run python benchmark/scope_benchmark_freeze_check.py --mode draft
+
+      - name: Run paired dry run on bot-testing-area
+        env:
+          METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PYTHONPATH: .
+        run: poetry run python benchmark/scope_paired_dryrun.py
+
+      - name: Preserve paired dry-run artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scope-benchmark-paired-dryrun-${{ github.run_id }}-${{ github.run_attempt }}
+          path: benchmark/dryrun_output/
+          if-no-files-found: warn
+          retention-days: 30
