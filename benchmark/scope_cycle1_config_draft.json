@@ -8,7 +8,8 @@
   "question_formats_supported": [
     "binary",
     "multiple_choice",
-    "numeric"
+    "numeric",
+    "date"
   ],
   "information_policy": {
     "external_research": "DISABLED_CYCLE1",
