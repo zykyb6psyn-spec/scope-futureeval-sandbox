@@ -52,15 +52,22 @@ def synthetic_authorized_records() -> tuple[dict, dict, dict, str]:
         {
             "frozen_at_utc": "2026-09-01T00:00:00+00:00",
             "protocol_sha256": "p" * 64,
-            "scope_code_commit_sha": "a" * 40,
+            "arm_spec_sha256": "a" * 64,
+            "scoring_spec_sha256": "b" * 64,
+            "scope_code_commit_sha": "c" * 40,
             "scope_code_sha256": "s" * 64,
-            "control_code_commit_sha": "a" * 40,
-            "control_code_sha256": "c" * 64,
+            "control_code_commit_sha": "c" * 40,
+            "control_code_sha256": "d" * 64,
             "scope_prompt_sha256": "q" * 64,
             "control_prompt_sha256": "r" * 64,
+            "sanitizer_sha256": "n" * 64,
+            "paired_logic_sha256": "l" * 64,
+            "scored_executor_sha256": "x" * 64,
+            "freeze_gate_sha256": "g" * 64,
+            "gate_hashes_sha256": "h" * 64,
             "evidence_pipeline_sha256": "e" * 64,
             "config_sha256": "f" * 64,
-            "dependency_lock_sha256": "d" * 64,
+            "dependency_lock_sha256": "k" * 64,
             "runtime_manifest_sha256": "m" * 64,
             "model_routes": ["openrouter/openai/gpt-4o", "openrouter/openai/gpt-4o-mini"],
             "generation_parameters": {"temperature": 0.3, "timeout_seconds": 40, "allowed_tries": 2},
@@ -79,7 +86,7 @@ def synthetic_authorized_records() -> tuple[dict, dict, dict, str]:
     binding.update(
         {
             "status": "BOUND",
-            "freeze_commit_sha": "a" * 40,
+            "freeze_commit_sha": "c" * 40,
             "freeze_timestamp_utc": "2026-09-01T00:00:00+00:00",
             "selected_target_cycle": "synthetic-future-minibench",
             "selected_target_id": "synthetic-target-id",
@@ -98,7 +105,7 @@ def synthetic_authorized_records() -> tuple[dict, dict, dict, str]:
         {
             "status": "AUTHORIZED",
             "authorized": True,
-            "freeze_commit_sha": "a" * 40,
+            "freeze_commit_sha": "c" * 40,
             "frozen_preregistration_sha256": prereg_file_hash,
             "target_binding_sha256": binding_sha256(binding),
             "authorized_at_utc": "2026-09-02T01:00:02+00:00",
@@ -207,7 +214,7 @@ def main() -> None:
     tests.append("explicit authorization flag is independently required")
 
     record = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": "PASS",
         "test_count": len(tests),
         "tests": tests,
