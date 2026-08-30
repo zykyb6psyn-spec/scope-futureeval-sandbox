@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "status": "FREEZE_CANDIDATE",
   "experiment": "SCOPE FutureEval Cycle 1 paired benchmark",
   "forecast_mode": "INITIAL_FORECAST_ONLY",
@@ -28,6 +28,7 @@
     "paired_snapshot_and_randomization_logic": "benchmark/scope_paired_dryrun.py",
     "scored_executor": "benchmark/scope_scored_cycle_runner.py",
     "scored_gate_logic": "benchmark/scope_benchmark_freeze_check.py",
+    "binding_hash_logic": "benchmark/scope_gate_hashes.py",
     "scoring_implementation": "benchmark/scope_scoring.py",
     "statistics_implementation": "benchmark/scope_statistics.py",
     "resolution_adapter": "benchmark/scope_resolution_adapter.py",
@@ -38,6 +39,8 @@
   },
   "prompt_hash_semantics": "Because both treatment and control prompts are defined in their respective source files, prompt SHA-256 values freeze the complete prompt-bearing source file. This is intentionally stricter than hashing extracted string literals alone.",
   "evidence_pipeline_hash_semantics": "The evidence-pipeline hash is a deterministic bundle hash over path+SHA-256 for scope_input_sanitization.py and scope_paired_dryrun.py.",
+  "runtime_integrity_policy": "Before any scored target client construction or question retrieval, the scored executor must recompute and compare all frozen executable, prompt, sanitizer, scoring, statistics, configuration, dependency-lock, runtime-manifest and gate hashes. Any mismatch fails closed.",
+  "runtime_integrity_validation": "benchmark/scope_runtime_integrity_validation.py",
   "target_policy": {
     "selection_rule": "FIRST_ELIGIBLE_FUTURE_MINIBENCH_AFTER_FREEZE",
     "minimum_hours_after_freeze": 24,
