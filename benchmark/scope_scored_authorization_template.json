@@ -1,0 +1,11 @@
+{
+  "schema_version": "1.0",
+  "status": "NOT_AUTHORIZED",
+  "authorized": false,
+  "freeze_commit_sha": null,
+  "frozen_preregistration_sha256": null,
+  "target_binding_sha256": null,
+  "authorized_at_utc": null,
+  "authorization_scope": "ONE_BOUND_FUTUREEVAL_CYCLE_ONLY",
+  "notes": "A scored run remains prohibited until this record is explicitly completed after freeze and target binding. Authorization must not modify the frozen forecast implementation."
+}
