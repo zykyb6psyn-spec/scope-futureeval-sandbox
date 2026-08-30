@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import copy
+import hashlib
 import json
 import os
 from datetime import datetime, timedelta, timezone
@@ -31,8 +32,28 @@ REPO_ROOT = ROOT.parent
 PREREG_PATH = ROOT / "scope_benchmark_preregistration_draft.json"
 BINDING_PATH = ROOT / "scope_target_binding_template.json"
 AUTH_PATH = ROOT / "scope_scored_authorization_template.json"
+RUNTIME_MANIFEST_PATH = ROOT / "SCOPE_FREEZE_RUNTIME_MANIFEST_v0.1.json"
 OUTPUT_DIR = ROOT / "scored_output"
 OUTPUT_DIR.mkdir(exist_ok=True)
+
+RUNTIME_FILES = {
+    "protocol": ROOT / "SCOPE_BENCHMARK_PROTOCOL_v0.1.md",
+    "arm_spec": ROOT / "SCOPE_ARM_SPEC_v0.1.md",
+    "scoring_spec": ROOT / "SCOPE_SCORING_SPEC_v0.1.md",
+    "scope_code": ROOT / "scope_structured_bot.py",
+    "control_code": REPO_ROOT / "main.py",
+    "sanitizer": ROOT / "scope_input_sanitization.py",
+    "paired_logic": ROOT / "scope_paired_dryrun.py",
+    "scored_executor": ROOT / "scope_scored_cycle_runner.py",
+    "freeze_gate": ROOT / "scope_benchmark_freeze_check.py",
+    "gate_hashes": ROOT / "scope_gate_hashes.py",
+    "scoring": ROOT / "scope_scoring.py",
+    "statistics": ROOT / "scope_statistics.py",
+    "resolution_adapter": ROOT / "scope_resolution_adapter.py",
+    "config": ROOT / "scope_cycle1_config_draft.json",
+    "dependency_lock": REPO_ROOT / "poetry.lock",
+    "runtime_manifest": RUNTIME_MANIFEST_PATH,
+}
 
 
 class ScoredGateClosed(RuntimeError):
@@ -65,6 +86,126 @@ def _required_frozen_value(mapping: dict[str, Any], key: str) -> Any:
     return value
 
 
+def _bundle_sha256(paths: list[Path]) -> str:
+    payload = []
+    for path in sorted(paths, key=lambda p: str(p.relative_to(REPO_ROOT))):
+        payload.append(
+            {
+                "path": str(path.relative_to(REPO_ROOT)),
+                "sha256": sha256_file(path),
+            }
+        )
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def compute_runtime_integrity_snapshot(
+    *,
+    file_overrides: dict[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Compute the exact local runtime state that a frozen scored run depends on."""
+    files = dict(RUNTIME_FILES)
+    if file_overrides:
+        unknown = set(file_overrides) - set(files)
+        if unknown:
+            raise ValueError(f"Unknown runtime file override role(s): {sorted(unknown)}")
+        files.update(file_overrides)
+
+    for role, path in files.items():
+        if not path.is_file():
+            raise ScoredGateClosed(f"Runtime integrity failed: required file missing: {role}")
+
+    config = load_json(files["config"])
+    runtime_manifest = load_json(files["runtime_manifest"])
+    model = config.get("model", {})
+    parity = config.get("parity", {})
+
+    return {
+        "protocol_sha256": sha256_file(files["protocol"]),
+        "arm_spec_sha256": sha256_file(files["arm_spec"]),
+        "scoring_spec_sha256": sha256_file(files["scoring_spec"]),
+        "scope_code_sha256": sha256_file(files["scope_code"]),
+        "control_code_sha256": sha256_file(files["control_code"]),
+        "scope_prompt_sha256": sha256_file(files["scope_code"]),
+        "control_prompt_sha256": sha256_file(files["control_code"]),
+        "sanitizer_sha256": sha256_file(files["sanitizer"]),
+        "paired_logic_sha256": sha256_file(files["paired_logic"]),
+        "scored_executor_sha256": sha256_file(files["scored_executor"]),
+        "freeze_gate_sha256": sha256_file(files["freeze_gate"]),
+        "gate_hashes_sha256": sha256_file(files["gate_hashes"]),
+        "evidence_pipeline_sha256": _bundle_sha256([files["sanitizer"], files["paired_logic"]]),
+        "config_sha256": sha256_file(files["config"]),
+        "dependency_lock_sha256": sha256_file(files["dependency_lock"]),
+        "runtime_manifest_sha256": sha256_file(files["runtime_manifest"]),
+        "scoring_implementation_sha256": sha256_file(files["scoring"]),
+        "analysis_code_sha256": sha256_file(files["statistics"]),
+        "resolution_adapter_sha256": sha256_file(files["resolution_adapter"]),
+        "model_routes": [model.get("reasoning"), model.get("parser")],
+        "generation_parameters": {
+            "temperature": model.get("temperature"),
+            "timeout_seconds": model.get("timeout_seconds"),
+            "allowed_tries": model.get("allowed_tries"),
+            "research_reports_per_question": parity.get("research_reports_per_question"),
+            "predictions_per_research_report": parity.get("predictions_per_research_report"),
+            "enable_summarize_research": parity.get("enable_summarize_research"),
+            "use_research_summary_to_forecast": parity.get("use_research_summary_to_forecast"),
+            "arm_execution_order_seed": config.get("randomization", {}).get("arm_execution_order_seed"),
+        },
+        "compute_budget_policy": runtime_manifest.get("compute_budget_policy"),
+    }
+
+
+def validate_frozen_runtime_integrity(
+    prereg: dict[str, Any],
+    *,
+    file_overrides: dict[str, Path] | None = None,
+) -> dict[str, Any]:
+    """Fail closed if local executable state differs from the frozen preregistration.
+
+    This check must run before any target client construction or question retrieval.
+    """
+    freeze = prereg.get("freeze_record", {})
+    primary = prereg.get("primary_metric", {})
+    uncertainty = prereg.get("uncertainty", {})
+    actual = compute_runtime_integrity_snapshot(file_overrides=file_overrides)
+
+    expected_from_freeze = {
+        "protocol_sha256": _required_frozen_value(freeze, "protocol_sha256"),
+        "arm_spec_sha256": _required_frozen_value(freeze, "arm_spec_sha256"),
+        "scoring_spec_sha256": _required_frozen_value(freeze, "scoring_spec_sha256"),
+        "scope_code_sha256": _required_frozen_value(freeze, "scope_code_sha256"),
+        "control_code_sha256": _required_frozen_value(freeze, "control_code_sha256"),
+        "scope_prompt_sha256": _required_frozen_value(freeze, "scope_prompt_sha256"),
+        "control_prompt_sha256": _required_frozen_value(freeze, "control_prompt_sha256"),
+        "sanitizer_sha256": _required_frozen_value(freeze, "sanitizer_sha256"),
+        "paired_logic_sha256": _required_frozen_value(freeze, "paired_logic_sha256"),
+        "scored_executor_sha256": _required_frozen_value(freeze, "scored_executor_sha256"),
+        "freeze_gate_sha256": _required_frozen_value(freeze, "freeze_gate_sha256"),
+        "gate_hashes_sha256": _required_frozen_value(freeze, "gate_hashes_sha256"),
+        "evidence_pipeline_sha256": _required_frozen_value(freeze, "evidence_pipeline_sha256"),
+        "config_sha256": _required_frozen_value(freeze, "config_sha256"),
+        "dependency_lock_sha256": _required_frozen_value(freeze, "dependency_lock_sha256"),
+        "runtime_manifest_sha256": _required_frozen_value(freeze, "runtime_manifest_sha256"),
+        "scoring_implementation_sha256": _required_frozen_value(primary, "scoring_implementation_sha256"),
+        "analysis_code_sha256": _required_frozen_value(uncertainty, "analysis_code_sha256"),
+        "resolution_adapter_sha256": _required_frozen_value(primary, "resolution_adapter_sha256"),
+    }
+
+    for key, expected in expected_from_freeze.items():
+        require(actual.get(key) == expected, f"Runtime integrity failed: {key} mismatch")
+
+    require(actual["model_routes"] == freeze.get("model_routes"), "Runtime integrity failed: model_routes mismatch")
+    require(
+        actual["generation_parameters"] == freeze.get("generation_parameters"),
+        "Runtime integrity failed: generation_parameters mismatch",
+    )
+    require(
+        actual["compute_budget_policy"] == freeze.get("compute_budget_policy"),
+        "Runtime integrity failed: compute_budget_policy mismatch",
+    )
+    return actual
+
+
 def validate_scored_gate(
     prereg: dict[str, Any],
     binding: dict[str, Any],
@@ -72,11 +213,7 @@ def validate_scored_gate(
     *,
     prereg_file_sha256: str,
 ) -> str:
-    """Validate all three independent gates before any target retrieval.
-
-    Returns the bound target ID only after every freeze, binding and explicit
-    authorization invariant succeeds.
-    """
+    """Validate the frozen preregistration, target binding and authorization records."""
     require(prereg.get("status") == "FROZEN_UNBOUND", "Gate 1 closed: preregistration is not FROZEN_UNBOUND")
     require(prereg.get("scored_run_enabled") is False, "Frozen preregistration may not itself enable scored execution")
 
@@ -94,10 +231,17 @@ def validate_scored_gate(
 
     for key in (
         "protocol_sha256",
+        "arm_spec_sha256",
+        "scoring_spec_sha256",
         "scope_code_sha256",
         "control_code_sha256",
         "scope_prompt_sha256",
         "control_prompt_sha256",
+        "sanitizer_sha256",
+        "paired_logic_sha256",
+        "scored_executor_sha256",
+        "freeze_gate_sha256",
+        "gate_hashes_sha256",
         "evidence_pipeline_sha256",
         "config_sha256",
         "dependency_lock_sha256",
@@ -113,7 +257,6 @@ def validate_scored_gate(
         _required_frozen_value(primary, key)
     _required_frozen_value(prereg.get("uncertainty", {}), "analysis_code_sha256")
 
-    # Gate 2: append-only target binding after the frozen waiting interval.
     require(binding.get("status") == "BOUND", "Gate 2 closed: target binding is not BOUND")
     require(binding.get("selected_by_predeclared_rule") is True, "Bound target was not selected by the predeclared rule")
     require(binding.get("question_level_content_inspected_before_binding") is False, "Leakage gate failed: question content inspected before binding")
@@ -132,7 +275,6 @@ def validate_scored_gate(
     computed_binding_hash = binding_sha256(binding)
     require(binding.get("binding_record_sha256") == computed_binding_hash, "Target-binding self-hash mismatch")
 
-    # Gate 3: explicit one-cycle scored authorization.
     require(auth.get("status") == "AUTHORIZED", "Gate 3 closed: scored authorization status is not AUTHORIZED")
     require(auth.get("authorized") is True, "Gate 3 closed: authorized flag is false")
     require(auth.get("authorization_scope") == "ONE_BOUND_FUTUREEVAL_CYCLE_ONLY", "Authorization scope changed")
@@ -166,14 +308,15 @@ async def execute_scored_cycle(
     binding = load_json(BINDING_PATH)
     auth = load_json(AUTH_PATH)
 
-    # CRITICAL ORDERING: no client construction, secret validation or target
-    # retrieval occurs before all three formal gates succeed.
+    # CRITICAL ORDERING: formal records AND executable runtime integrity are
+    # checked before secrets, client construction or target retrieval.
     target_id = validate_scored_gate(
         prereg,
         binding,
         auth,
         prereg_file_sha256=sha256_file(PREREG_PATH),
     )
+    runtime_integrity = validate_frozen_runtime_integrity(prereg)
     validate_secrets_after_gate()
 
     config = load_config()
@@ -186,21 +329,19 @@ async def execute_scored_cycle(
 
     scope_bot = make_bot(ScopeStructuredBot2026, config)
     control_bot = make_bot(SummerTemplateBot2026, config)
-    # Never allow ForecastBot's automatic publication path. The SCOPE report is
-    # published explicitly only after both arms exist and the paired prepublish
-    # audit record is durably written.
     scope_bot.publish_reports_to_metaculus = False
     control_bot.publish_reports_to_metaculus = False
     bots = {"scope": scope_bot, "control": control_bot}
 
     run_manifest: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "run_kind": "AUTHORIZED_SCORED_CYCLE",
         "started_at_utc": utc_now(),
         "target_id": target_id,
         "freeze_commit_sha": binding["freeze_commit_sha"],
         "preregistration_sha256": sha256_file(PREREG_PATH),
         "target_binding_sha256": binding_sha256(binding),
+        "runtime_integrity_snapshot": runtime_integrity,
         "question_count_retrieved": len(questions),
         "published_scope_reports": 0,
         "paired_records": 0,
@@ -281,7 +422,6 @@ async def execute_scored_cycle(
         record_hash = sha256_data(paired_record)
         paired_record["record_sha256"] = record_hash
 
-        # Durably persist both forecasts before any external publication.
         append_fsync(prepublish_path, paired_record)
         previous_hash = record_hash
         run_manifest["paired_records"] += 1
