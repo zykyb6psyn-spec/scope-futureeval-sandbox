@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "sandbox_version": "0.2",
+  "purpose": "Technical end-to-end FutureEval sandbox testing only. This configuration is not a scored SCOPE validation configuration.",
+  "target": "bot-testing-area",
+  "publish_reports_to_metaculus": true,
+  "research_reports_per_question": 1,
+  "predictions_per_research_report": 1,
+  "use_research_summary_to_forecast": false,
+  "skip_previously_forecasted_questions": false,
+  "extra_metadata_in_explanation": true,
+  "models": {
+    "default": {
+      "model": "openrouter/openai/gpt-4o",
+      "temperature": 0.3,
+      "timeout_seconds": 40,
+      "allowed_tries": 2
+    },
+    "summarizer": "openrouter/openai/gpt-4o-mini",
+    "researcher": "no_research",
+    "parser": "openrouter/openai/gpt-4o-mini"
+  },
+  "scored_submission": {
+    "enabled": false,
+    "requires_preregistration": true,
+    "allowed_targets": []
+  }
+}
