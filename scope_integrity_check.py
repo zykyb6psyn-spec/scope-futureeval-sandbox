@@ -20,6 +20,9 @@ def main() -> None:
     assert config.get("scored_submission", {}).get("enabled") is False, "Scored submission must be disabled"
     assert config.get("scored_submission", {}).get("allowed_targets") == [], "No scored targets may be allowed"
     assert config.get("models", {}).get("researcher") == "no_research", "External research must remain disabled for plumbing test"
+    assert config.get("use_research_summary_to_forecast") is False, "Research summaries must not feed the forecast"
+    assert config.get("enable_summarize_research") is False, "Research summarization must remain disabled"
+    assert config.get("extra_metadata_in_explanation") is False, "Technical smoke test must minimize nonessential explanation metadata"
 
     runtime = config.get("runtime", {})
     assert runtime.get("runner") == "ubuntu-24.04", "Runner version must remain pinned"

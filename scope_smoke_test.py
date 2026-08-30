@@ -35,6 +35,9 @@ def validate_isolation(config: dict, prereg: dict) -> None:
     if config.get("models", {}).get("researcher") != "no_research":
         raise RuntimeError("Isolation gate: technical smoke test must keep external research disabled")
 
+    if config.get("enable_summarize_research") is not False:
+        raise RuntimeError("Isolation gate: technical smoke test must keep research summarization disabled")
+
     missing = [name for name in ("METACULUS_TOKEN", "OPENROUTER_API_KEY") if not os.environ.get(name)]
     if missing:
         raise RuntimeError(f"Missing required GitHub secret(s): {', '.join(missing)}")
@@ -57,6 +60,7 @@ async def run() -> None:
             research_reports_per_question=config["research_reports_per_question"],
             predictions_per_research_report=config["predictions_per_research_report"],
             use_research_summary_to_forecast=config["use_research_summary_to_forecast"],
+            enable_summarize_research=config["enable_summarize_research"],
             publish_reports_to_metaculus=config["publish_reports_to_metaculus"],
             folder_to_save_reports_to=None,
             skip_previously_forecasted_questions=config["skip_previously_forecasted_questions"],
