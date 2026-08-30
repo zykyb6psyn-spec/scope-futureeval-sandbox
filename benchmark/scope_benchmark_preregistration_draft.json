@@ -1,0 +1,119 @@
+{
+  "schema_version": "1.0",
+  "protocol_version": "0.1",
+  "status": "DESIGN_DRAFT",
+  "scored_run_enabled": false,
+  "target_selection": {
+    "mode": "FIRST_ELIGIBLE_FUTURE_MINIBENCH_AFTER_FREEZE",
+    "minimum_hours_after_freeze": 24,
+    "target_cycle": null,
+    "target_tournament_or_minibench": null,
+    "target_questions_inspected_before_freeze": false
+  },
+  "experimental_design": {
+    "type": "PAIRED_TWO_ARM",
+    "first_cycle_mode": "INITIAL_FORECAST_ONLY",
+    "scope_arm": "SCOPE_STRUCTURED_REASONING",
+    "control_arm": "MATCHED_BASE_LLM_CONTROL",
+    "information_parity_required": true,
+    "same_model_family_required": true,
+    "same_evidence_packet_required": true,
+    "same_information_cutoff_required": true,
+    "cross_arm_forecast_visibility": false
+  },
+  "primary_hypothesis": "SCOPE has higher mean proper-score performance than the matched control on the frozen target cycle.",
+  "primary_metric": {
+    "name": "paired_mean_metaculus_compatible_proper_score_difference",
+    "direction": "higher_is_better",
+    "formula": "mean(score_scope_i - score_control_i)",
+    "scoring_implementation_sha256": null,
+    "scoring_validation_record_sha256": null
+  },
+  "uncertainty": {
+    "method": "cluster_bootstrap",
+    "cluster_key": "independent_parent_question_or_question_group",
+    "resamples": 10000,
+    "report_intervals": [0.8, 0.95],
+    "analysis_code_sha256": null
+  },
+  "interpretation_thresholds": {
+    "strong_positive": {
+      "delta_gt": 0,
+      "probability_delta_gt_zero_gte": 0.9,
+      "max_forecast_failure_rate": 0.05,
+      "requires_no_material_tail_deterioration": true
+    },
+    "promising": {
+      "delta_gt": 0,
+      "probability_delta_gt_zero_gte": 0.75,
+      "probability_delta_gt_zero_lt": 0.9,
+      "max_forecast_failure_rate": 0.05
+    },
+    "inconclusive": {
+      "probability_delta_gt_zero_range": [0.25, 0.75]
+    },
+    "negative": {
+      "delta_lt": 0,
+      "probability_delta_gt_zero_lte": 0.25
+    }
+  },
+  "secondary_metrics": [
+    "paired_median_score_difference",
+    "question_win_tie_loss_rate",
+    "catastrophic_error_tail",
+    "binary_brier_score",
+    "binary_calibration_descriptives",
+    "official_metaculus_peer_or_tournament_score",
+    "official_metaculus_rank",
+    "forecast_failure_rate",
+    "latency_per_question",
+    "estimated_cost_per_question",
+    "token_usage_if_available"
+  ],
+  "eligibility": {
+    "all_mutually_supported_questions_included": true,
+    "performance_based_exclusion_forbidden": true,
+    "allowed_exclusion_reason_codes": [
+      "UNSUPPORTED_FROZEN_FORMAT",
+      "MALFORMED_OR_INACCESSIBLE_PAYLOAD",
+      "PLATFORM_INPUT_PARITY_FAILURE",
+      "ANNULLED_OR_NONRESOLVED_BY_PLATFORM"
+    ],
+    "question_groups_clustered_for_uncertainty": true
+  },
+  "failure_gate": {
+    "max_failure_rate_for_primary_claim": 0.05,
+    "failed_cases_may_be_silently_dropped": false,
+    "complete_case_analysis_secondary_only": true
+  },
+  "information_policy": {
+    "community_prediction_visible_to_arms": false,
+    "leaderboard_signal_visible_to_arms": false,
+    "other_arm_forecast_visible_before_freeze": false,
+    "evidence_source_policy": "TO_BE_FROZEN",
+    "information_cutoff_rule": "TO_BE_FROZEN"
+  },
+  "freeze_record": {
+    "frozen_at_utc": null,
+    "protocol_sha256": null,
+    "scope_code_commit_sha": null,
+    "scope_code_sha256": null,
+    "control_code_commit_sha": null,
+    "control_code_sha256": null,
+    "scope_prompt_sha256": null,
+    "control_prompt_sha256": null,
+    "evidence_pipeline_sha256": null,
+    "config_sha256": null,
+    "dependency_lock_sha256": null,
+    "runtime_manifest_sha256": null,
+    "model_routes": [],
+    "generation_parameters": {},
+    "compute_budget_policy": "TO_BE_FROZEN"
+  },
+  "development_separation": {
+    "frozen_evaluation_branch_mutable_during_cycle": false,
+    "parallel_development_allowed_on_other_branches": true,
+    "outcome_driven_changes_retroactively_applied": false
+  },
+  "notes": "This is a design draft only. It does not authorize a scored run. The target must remain unselected until all freeze fields and implementation checks are complete."
+}
