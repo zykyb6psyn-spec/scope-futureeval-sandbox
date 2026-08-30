@@ -1,0 +1,49 @@
+name: SCOPE Sandbox Integrity Check
+
+on:
+  pull_request:
+    paths:
+      - "scope_smoke_test.py"
+      - "scope_audit.py"
+      - "scope_integrity_check.py"
+      - "scope_sandbox_config.json"
+      - "scope_preregistration.json"
+      - "poetry.lock"
+      - "pyproject.toml"
+      - ".github/workflows/scope_smoke_test.yaml"
+      - ".github/workflows/scope_integrity_check.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "scope_smoke_test.py"
+      - "scope_audit.py"
+      - "scope_integrity_check.py"
+      - "scope_sandbox_config.json"
+      - "scope_preregistration.json"
+      - "poetry.lock"
+      - "pyproject.toml"
+      - ".github/workflows/scope_smoke_test.yaml"
+      - ".github/workflows/scope_integrity_check.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run syntax checks
+        run: python -m py_compile scope_smoke_test.py scope_audit.py scope_integrity_check.py
+
+      - name: Run fail-closed integrity checks
+        run: python scope_integrity_check.py
