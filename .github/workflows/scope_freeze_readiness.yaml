@@ -1,0 +1,88 @@
+name: SCOPE Formal Freeze Readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - scope-benchmark-design-v0.1
+    paths:
+      - .github/workflows/scope_freeze_readiness.yaml
+      - benchmark/scope_freeze_readiness.py
+      - benchmark/SCOPE_FREEZE_RUNTIME_MANIFEST_v0.1.json
+      - benchmark/scope_structured_bot.py
+      - benchmark/scope_input_sanitization.py
+      - benchmark/scope_paired_dryrun.py
+      - benchmark/scope_scored_cycle_runner.py
+      - benchmark/scope_benchmark_freeze_check.py
+      - benchmark/scope_scored_gate_validation.py
+      - benchmark/scope_scoring.py
+      - benchmark/scope_scoring_validation.py
+      - benchmark/scope_statistics.py
+      - benchmark/scope_resolution_adapter.py
+      - benchmark/scope_cycle1_config_draft.json
+      - benchmark/SCOPE_BENCHMARK_PROTOCOL_v0.1.md
+      - benchmark/SCOPE_ARM_SPEC_v0.1.md
+      - benchmark/SCOPE_SCORING_SPEC_v0.1.md
+      - main.py
+      - poetry.lock
+
+concurrency:
+  group: scope-formal-freeze-readiness
+  cancel-in-progress: false
+
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out candidate evaluation commit
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+          installer-parallel: true
+
+      - name: Install locked dependencies
+        run: poetry install --no-interaction --no-root
+
+      - name: Syntax preflight
+        run: |
+          poetry run python -m py_compile \
+            benchmark/scope_structured_bot.py \
+            benchmark/scope_input_sanitization.py \
+            benchmark/scope_paired_dryrun.py \
+            benchmark/scope_scored_cycle_runner.py \
+            benchmark/scope_benchmark_freeze_check.py \
+            benchmark/scope_scored_gate_validation.py \
+            benchmark/scope_scoring.py \
+            benchmark/scope_scoring_validation.py \
+            benchmark/scope_statistics.py \
+            benchmark/scope_resolution_adapter.py \
+            benchmark/scope_freeze_readiness.py
+
+      - name: Re-run offline scoring and resolution validation
+        run: poetry run python benchmark/scope_scoring_validation.py
+
+      - name: Re-run offline input parity and leakage validation
+        run: poetry run python benchmark/scope_parity_validation.py
+
+      - name: Re-prove scored executor fails closed before target retrieval
+        run: poetry run python benchmark/scope_scored_gate_validation.py
+
+      - name: Run integral freeze readiness gate
+        run: poetry run python benchmark/scope_freeze_readiness.py
+
+      - name: Preserve freeze readiness record
+        uses: actions/upload-artifact@v4
+        with:
+          name: scope-freeze-readiness-${{ github.run_id }}-${{ github.run_attempt }}
+          path: benchmark/freeze_readiness_output/freeze_readiness_record.json
+          if-no-files-found: error
+          retention-days: 90
