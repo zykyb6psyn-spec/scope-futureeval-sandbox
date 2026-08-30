@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "protocol_version": "0.1",
   "status": "DESIGN_DRAFT",
   "scored_run_enabled": false,
@@ -19,21 +19,40 @@
     "same_model_family_required": true,
     "same_evidence_packet_required": true,
     "same_information_cutoff_required": true,
-    "cross_arm_forecast_visibility": false
+    "cross_arm_forecast_visibility": false,
+    "supported_question_formats": [
+      "binary",
+      "multiple_choice",
+      "numeric",
+      "discrete",
+      "date"
+    ],
+    "excluded_question_formats": [
+      "conditional"
+    ]
   },
-  "primary_hypothesis": "SCOPE has higher mean proper-score performance than the matched control on the frozen target cycle.",
+  "primary_hypothesis": "SCOPE has higher mean paired raw log-score performance than the matched control on the frozen target cycle.",
   "primary_metric": {
-    "name": "paired_mean_metaculus_compatible_proper_score_difference",
+    "name": "paired_mean_raw_log_score_difference_nats",
     "direction": "higher_is_better",
-    "formula": "mean(score_scope_i - score_control_i)",
+    "per_pair_formula": "ln(p_scope_realized_i) - ln(p_control_realized_i)",
+    "aggregate_formula": "mean(delta_i)",
+    "categorical_realized_probability": "resolved option probability",
+    "continuous_realized_probability": "official Metaculus PMF resolution bucket derived from frozen standardized CDF",
+    "scoring_spec": "SCOPE_SCORING_SPEC_v0.1.md",
     "scoring_implementation_sha256": null,
-    "scoring_validation_record_sha256": null
+    "scoring_validation_record_sha256": null,
+    "resolution_adapter_sha256": null
   },
   "uncertainty": {
     "method": "cluster_bootstrap",
     "cluster_key": "independent_parent_question_or_question_group",
     "resamples": 10000,
+    "deterministic_seed": 640064,
     "report_intervals": [0.8, 0.95],
+    "report_probability_mean_delta_gt_zero": true,
+    "minimum_resolved_pairs_for_classification": 30,
+    "minimum_independent_clusters_for_classification": 20,
     "analysis_code_sha256": null
   },
   "interpretation_thresholds": {
@@ -41,26 +60,36 @@
       "delta_gt": 0,
       "probability_delta_gt_zero_gte": 0.9,
       "max_forecast_failure_rate": 0.05,
-      "requires_no_material_tail_deterioration": true
+      "requires_minimum_evidence_gate": true,
+      "requires_no_tail_safety_breach": true
     },
     "promising": {
       "delta_gt": 0,
       "probability_delta_gt_zero_gte": 0.75,
       "probability_delta_gt_zero_lt": 0.9,
-      "max_forecast_failure_rate": 0.05
-    },
-    "inconclusive": {
-      "probability_delta_gt_zero_range": [0.25, 0.75]
+      "max_forecast_failure_rate": 0.05,
+      "requires_minimum_evidence_gate": true,
+      "requires_no_tail_safety_breach": true
     },
     "negative": {
       "delta_lt": 0,
       "probability_delta_gt_zero_lte": 0.25
-    }
+    },
+    "inconclusive_default": true
+  },
+  "tail_guard": {
+    "catastrophic_relative_loss_delta_lte_nats": -3.0,
+    "catastrophic_relative_win_delta_gte_nats": 3.0,
+    "loss_rate_breach_gt": 0.05,
+    "loss_minus_win_rate_breach_gt": 0.05,
+    "small_mean_advantage_nats_lte": 0.1,
+    "classification_if_breach_and_small_mean_advantage": "NEGATIVE_TAIL_RISK",
+    "classification_if_breach_and_larger_positive_mean": "INCONCLUSIVE_TAIL_RISK"
   },
   "secondary_metrics": [
-    "paired_median_score_difference",
+    "paired_median_log_score_difference",
     "question_win_tie_loss_rate",
-    "catastrophic_error_tail",
+    "catastrophic_relative_error_tail",
     "binary_brier_score",
     "binary_calibration_descriptives",
     "official_metaculus_peer_or_tournament_score",
@@ -79,19 +108,32 @@
       "PLATFORM_INPUT_PARITY_FAILURE",
       "ANNULLED_OR_NONRESOLVED_BY_PLATFORM"
     ],
-    "question_groups_clustered_for_uncertainty": true
+    "question_groups_clustered_for_uncertainty": true,
+    "url_may_be_used_as_unique_question_key": false
   },
   "failure_gate": {
-    "max_failure_rate_for_primary_claim": 0.05,
+    "max_failure_rate_for_positive_primary_classification": 0.05,
     "failed_cases_may_be_silently_dropped": false,
-    "complete_case_analysis_secondary_only": true
+    "complete_case_analysis_secondary_only": true,
+    "classification_if_failure_rate_exceeded": "INCONCLUSIVE_TECHNICAL_FAILURE_RATE"
   },
   "information_policy": {
     "community_prediction_visible_to_arms": false,
     "leaderboard_signal_visible_to_arms": false,
-    "other_arm_forecast_visible_before_freeze": false,
-    "evidence_source_policy": "TO_BE_FROZEN",
-    "information_cutoff_rule": "TO_BE_FROZEN"
+    "other_arm_forecast_visible_before_both_outputs_frozen": false,
+    "evidence_source_policy": "CYCLE1_QUESTION_SNAPSHOT_ONLY_NO_EXTERNAL_RESEARCH",
+    "information_cutoff_rule": "FIRST_CAPTURED_IMMUTABLE_QUESTION_SNAPSHOT"
+  },
+  "scoring_parity": {
+    "official_backend_sources_reviewed": true,
+    "categorical_probability_semantics_checked": true,
+    "continuous_pmf_semantics_checked": true,
+    "exact_grid_boundary_semantics_checked": true,
+    "log_scaled_location_semantics_checked": true,
+    "multiple_choice_other_fallback_checked": true,
+    "offline_validation_status": "PASS",
+    "offline_validation_run_id": 33340708121,
+    "resolved_record_adapter_validation_required_before_freeze": true
   },
   "freeze_record": {
     "frozen_at_utc": null,
@@ -115,5 +157,5 @@
     "parallel_development_allowed_on_other_branches": true,
     "outcome_driven_changes_retroactively_applied": false
   },
-  "notes": "This is a design draft only. It does not authorize a scored run. The target must remain unselected until all freeze fields and implementation checks are complete."
+  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until all implementation and adapter checks are complete."
 }
