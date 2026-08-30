@@ -1,0 +1,43 @@
+{
+  "schema_version": "1.0",
+  "status": "DESIGN_DRAFT",
+  "cycle_mode": "INITIAL_FORECAST_PAIRED",
+  "technical_dryrun_target": "bot-testing-area",
+  "scored_target": null,
+  "publish_during_dryrun": false,
+  "question_formats_supported": [
+    "binary",
+    "multiple_choice",
+    "numeric"
+  ],
+  "information_policy": {
+    "external_research": "DISABLED_CYCLE1",
+    "shared_evidence_packet": "QUESTION_SNAPSHOT_ONLY",
+    "community_prediction": "PROHIBITED",
+    "leaderboard_signal": "PROHIBITED",
+    "cross_arm_forecast_visibility": "PROHIBITED"
+  },
+  "model": {
+    "reasoning": "openrouter/openai/gpt-4o",
+    "parser": "openrouter/openai/gpt-4o-mini",
+    "temperature": 0.3,
+    "timeout_seconds": 40,
+    "allowed_tries": 2
+  },
+  "parity": {
+    "same_reasoning_model": true,
+    "same_parser_model": true,
+    "same_temperature": true,
+    "same_question_snapshot": true,
+    "same_research_input": true,
+    "research_reports_per_question": 1,
+    "predictions_per_research_report": 1,
+    "enable_summarize_research": false,
+    "use_research_summary_to_forecast": false
+  },
+  "randomization": {
+    "arm_execution_order_seed": 640064,
+    "note": "Reserved for the frozen paired executor. Dry-run may execute whole arms sequentially but must preserve input parity."
+  },
+  "scored_run_enabled": false
+}
