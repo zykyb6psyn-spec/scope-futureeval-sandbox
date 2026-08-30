@@ -3,6 +3,9 @@ name: SCOPE FutureEval Smoke Test
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: scope-futureeval-smoke-test
   cancel-in-progress: false
@@ -10,6 +13,12 @@ concurrency:
 jobs:
   smoke_test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONHASHSEED: "0"
+      TZ: UTC
+      SCOPE_RUN_KIND: technical-smoke-test
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -26,11 +35,23 @@ jobs:
           virtualenvs-in-project: true
           installer-parallel: true
 
-      - name: Install dependencies
-        run: poetry install --no-interaction --no-root
+      - name: Install locked dependencies
+        run: poetry install --sync --no-interaction --no-root
+
+      - name: Syntax and hardening preflight
+        run: poetry run python -m py_compile scope_smoke_test.py scope_audit.py
 
       - name: Run isolated smoke test
         run: poetry run python scope_smoke_test.py
         env:
           METACULUS_TOKEN: ${{ secrets.METACULUS_TOKEN }}
           OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+
+      - name: Preserve SCOPE audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scope-futureeval-audit-${{ github.run_id }}-${{ github.run_attempt }}
+          path: scope_audit_output/
+          if-no-files-found: warn
+          retention-days: 90
