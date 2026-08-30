@@ -43,13 +43,16 @@ def validate_isolation(config: dict, prereg: dict) -> None:
 async def run() -> None:
     config = load_json(CONFIG_PATH)
     prereg = load_json(PREREG_PATH)
-    validate_isolation(config, prereg)
     pre_manifest = build_pre_run_manifest(config, prereg)
 
-    default_cfg = config["models"]["default"]
+    default_cfg = config.get("models", {}).get("default", {})
     reports: list = []
 
     try:
+        # Run the fail-closed gate only after provenance has been captured, so
+        # even rejected configurations leave an audit artifact.
+        validate_isolation(config, prereg)
+
         bot = SummerTemplateBot2026(
             research_reports_per_question=config["research_reports_per_question"],
             predictions_per_research_report=config["predictions_per_research_report"],
@@ -91,7 +94,8 @@ async def run() -> None:
         logger.info("SCOPE FutureEval sandbox smoke test completed successfully")
 
     except Exception as exc:
-        # Preserve an audit artifact even when failure occurs before forecast reports exist.
+        # Preserve an audit artifact even when the run is rejected before any
+        # forecast is sent or when initialization fails.
         post_path_exists = os.path.exists("scope_audit_output/post_run_manifest.json")
         if not post_path_exists:
             finalize_manifest(
