@@ -31,13 +31,16 @@ FILES = {
     "paired_logic": ROOT / "scope_paired_dryrun.py",
     "scored_executor": ROOT / "scope_scored_cycle_runner.py",
     "freeze_gate": ROOT / "scope_benchmark_freeze_check.py",
+    "gate_hashes": ROOT / "scope_gate_hashes.py",
     "scored_gate_validation": ROOT / "scope_scored_gate_validation.py",
+    "runtime_integrity_validation": ROOT / "scope_runtime_integrity_validation.py",
     "scoring": ROOT / "scope_scoring.py",
     "statistics": ROOT / "scope_statistics.py",
     "resolution_adapter": ROOT / "scope_resolution_adapter.py",
     "config": CONFIG_PATH,
     "dependency_lock": REPO_ROOT / "poetry.lock",
     "runtime_manifest": RUNTIME_MANIFEST_PATH,
+    "freeze_readiness_gate": ROOT / "scope_freeze_readiness.py",
 }
 
 
@@ -81,7 +84,6 @@ def main() -> None:
     auth = load_json(AUTH_PATH)
     runtime = load_json(RUNTIME_MANIFEST_PATH)
 
-    # Reuse the formal draft and common governance gates.
     check_common(prereg, binding, auth)
     check_draft(prereg, binding, auth)
     checks.extend([
@@ -121,6 +123,7 @@ def main() -> None:
     require(runtime.get("status") == "FREEZE_CANDIDATE", "runtime manifest is a FREEZE_CANDIDATE", checks)
     require(runtime_routes.get("reasoning") == model.get("reasoning"), "runtime reasoning route matches cycle config", checks)
     require(runtime_routes.get("parser") == model.get("parser"), "runtime parser route matches cycle config", checks)
+    require("fails closed" in runtime.get("runtime_integrity_policy", ""), "runtime manifest requires fail-closed integrity verification", checks)
 
     params = runtime.get("generation_parameters", {})
     parity = config.get("parity", {})
@@ -150,16 +153,25 @@ def main() -> None:
     freeze_values = {
         "frozen_at_utc": None,
         "protocol_sha256": file_hashes["protocol"],
+        "arm_spec_sha256": file_hashes["arm_spec"],
+        "scoring_spec_sha256": file_hashes["scoring_spec"],
         "scope_code_commit_sha": candidate_commit,
         "scope_code_sha256": file_hashes["scope_code"],
         "control_code_commit_sha": candidate_commit,
         "control_code_sha256": file_hashes["control_code"],
         "scope_prompt_sha256": file_hashes["scope_code"],
         "control_prompt_sha256": file_hashes["control_code"],
+        "sanitizer_sha256": file_hashes["sanitizer"],
+        "paired_logic_sha256": file_hashes["paired_logic"],
+        "scored_executor_sha256": file_hashes["scored_executor"],
+        "freeze_gate_sha256": file_hashes["freeze_gate"],
+        "gate_hashes_sha256": file_hashes["gate_hashes"],
         "evidence_pipeline_sha256": evidence_pipeline_sha,
         "config_sha256": file_hashes["config"],
         "dependency_lock_sha256": file_hashes["dependency_lock"],
         "runtime_manifest_sha256": file_hashes["runtime_manifest"],
+        "runtime_integrity_validation_sha256": file_hashes["runtime_integrity_validation"],
+        "freeze_readiness_gate_sha256": file_hashes["freeze_readiness_gate"],
         "model_routes": [model.get("reasoning"), model.get("parser")],
         "generation_parameters": {
             "temperature": model.get("temperature"),
@@ -175,7 +187,7 @@ def main() -> None:
     }
 
     record = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "status": "READY_FOR_FORMAL_FREEZE",
         "checked_at_utc": utc_now(),
         "candidate_evaluation_commit_sha": candidate_commit,
@@ -191,6 +203,10 @@ def main() -> None:
         },
         "uncertainty_freeze_values": {
             "analysis_code_sha256": file_hashes["statistics"],
+        },
+        "validation_sources": {
+            "scored_gate_validation_sha256": file_hashes["scored_gate_validation"],
+            "runtime_integrity_validation_sha256": file_hashes["runtime_integrity_validation"],
         },
         "pre_target_state": {
             "preregistration_status": prereg.get("status"),
