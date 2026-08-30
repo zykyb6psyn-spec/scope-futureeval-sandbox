@@ -4,6 +4,7 @@ from datetime import datetime
 
 from forecasting_tools import (
     BinaryQuestion,
+    DateQuestion,
     MultipleChoiceQuestion,
     NumericQuestion,
     clean_indents,
@@ -157,9 +158,7 @@ class ScopeStructuredBot2026(SummerTemplateBot2026):
         return await self._multiple_choice_prompt_to_forecast(question, prompt)
 
     async def _run_forecast_on_numeric(self, question: NumericQuestion, research: str):
-        upper_bound_message, lower_bound_message = (
-            self._create_upper_and_lower_bound_messages(question)
-        )
+        upper_bound_message, lower_bound_message = self._create_upper_and_lower_bound_messages(question)
         prompt = clean_indents(
             f"""
             You are the SCOPE structured forecasting arm in a blinded benchmark.
@@ -233,3 +232,70 @@ class ScopeStructuredBot2026(SummerTemplateBot2026):
             """
         )
         return await self._numeric_prompt_to_forecast(question, prompt)
+
+    async def _run_forecast_on_date(self, question: DateQuestion, research: str):
+        upper_bound_message, lower_bound_message = self._create_upper_and_lower_bound_messages(question)
+        prompt = clean_indents(
+            f"""
+            You are the SCOPE structured forecasting arm in a blinded benchmark.
+            Do not invent current facts that are not contained in the supplied materials.
+
+            QUESTION
+            {question.question_text}
+
+            BACKGROUND
+            {question.background_info}
+
+            RESOLUTION CRITERIA
+            {question.resolution_criteria}
+
+            FINE PRINT
+            {question.fine_print}
+
+            SHARED EVIDENCE PACKET
+            {self._evidence_text(research)}
+
+            Today is {datetime.now().strftime("%Y-%m-%d")}.
+
+            {lower_bound_message}
+            {upper_bound_message}
+
+            Apply SCOPE in this fixed order:
+
+            1. EVIDENCE
+               Identify observations that constrain when the event can plausibly occur.
+               Mark fact/claim/inference and direct/indirect evidence.
+
+            2. DEPENDENCY
+               Identify correlated timing signals and avoid double-counting a single driver.
+
+            3. BASE RATE
+               Give a defensible reference class for event timing if one exists. Otherwise say so.
+
+            4. SCENARIOS
+               Describe a central timing path, a plausible early path and a plausible late path.
+
+            5. DISTRIBUTION SYNTHESIS
+               Produce a chronological percentile distribution that reflects ordinary uncertainty
+               and meaningful schedule/slippage risk.
+
+            6. CALIBRATION GUARD
+               Check whether the 10th-90th interval is wide enough given dependencies and unknowns.
+               You may revise once after this check.
+
+            Formatting rules:
+            - dates must use YYYY-MM-DD, or YYYY-MM-DDTHH:MM:SSZ if hours matter;
+            - dates must increase chronologically from percentile 10 through 90.
+
+            {self._get_conditional_disclaimer_if_necessary(question)}
+
+            End exactly with:
+            Percentile 10: YYYY-MM-DD
+            Percentile 20: YYYY-MM-DD
+            Percentile 40: YYYY-MM-DD
+            Percentile 60: YYYY-MM-DD
+            Percentile 80: YYYY-MM-DD
+            Percentile 90: YYYY-MM-DD
+            """
+        )
+        return await self._date_prompt_to_forecast(question, prompt)
