@@ -1,7 +1,7 @@
 {
-  "schema_version": "1.3",
+  "schema_version": "1.4",
   "protocol_version": "0.1",
-  "status": "DESIGN_DRAFT",
+  "status": "FROZEN_UNBOUND",
   "scored_run_enabled": false,
   "target_selection": {
     "mode": "FIRST_ELIGIBLE_FUTURE_MINIBENCH_AFTER_FREEZE",
@@ -40,9 +40,9 @@
     "categorical_realized_probability": "resolved option probability",
     "continuous_realized_probability": "official Metaculus PMF resolution bucket derived from frozen standardized CDF",
     "scoring_spec": "SCOPE_SCORING_SPEC_v0.1.md",
-    "scoring_implementation_sha256": null,
-    "scoring_validation_record_sha256": null,
-    "resolution_adapter_sha256": null
+    "scoring_implementation_sha256": "0191d4512ff16f05a4c9c658ce75cca3c7ea9b6caa54ee3b8dff1cf2a41bdd1c",
+    "scoring_validation_record_sha256": "bc3beb702c2939fa458f0a09bf1ffc4851deb2d2b427c9a4a2231f45e3dfa0d8",
+    "resolution_adapter_sha256": "9e1200845d202cdf7174249dadd2842b0f3274ee49107dd778d91f5931ec4b31"
   },
   "uncertainty": {
     "method": "cluster_bootstrap",
@@ -53,7 +53,7 @@
     "report_probability_mean_delta_gt_zero": true,
     "minimum_resolved_pairs_for_classification": 30,
     "minimum_independent_clusters_for_classification": 20,
-    "analysis_code_sha256": null
+    "analysis_code_sha256": "0d8d853070f6bf6e44ff96acb22bf1229925baf4ca527a196f998407e441e359"
   },
   "interpretation_thresholds": {
     "strong_positive": {
@@ -158,26 +158,58 @@
     "input_parity_failure_count": 0
   },
   "freeze_record": {
-    "frozen_at_utc": null,
-    "protocol_sha256": null,
-    "scope_code_commit_sha": null,
-    "scope_code_sha256": null,
-    "control_code_commit_sha": null,
-    "control_code_sha256": null,
-    "scope_prompt_sha256": null,
-    "control_prompt_sha256": null,
-    "evidence_pipeline_sha256": null,
-    "config_sha256": null,
-    "dependency_lock_sha256": null,
-    "runtime_manifest_sha256": null,
-    "model_routes": [],
-    "generation_parameters": {},
-    "compute_budget_policy": "TO_BE_FROZEN"
+    "frozen_at_utc": "2026-08-30T23:37:36.206277+00:00",
+    "protocol_sha256": "9cd7e1795282621c9bf590fabfff571cf65c76f6b198b8e0e3bbf78390d4fb14",
+    "arm_spec_sha256": "a7827cc934cc49f5eecb0e641993ef207e1275a554c5047960331d30dfe4ddf4",
+    "scoring_spec_sha256": "44d21fc97aa5de2e6cdafb059371ef2459e883109d11e20521ce95b2bb1c6f00",
+    "scope_code_commit_sha": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+    "scope_code_sha256": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f",
+    "control_code_commit_sha": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+    "control_code_sha256": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807",
+    "scope_prompt_sha256": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f",
+    "control_prompt_sha256": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807",
+    "sanitizer_sha256": "dfd624becda211a10a35c913925263d1ffaf238021e58e912cde78cb9a9477f6",
+    "paired_logic_sha256": "495eb7431d8f03b68e3f064245625a7a41ceeae425c0529fe1f47a2398963d50",
+    "scored_executor_sha256": "8710805b397e50c3571fb36ce9e6ee5908d1b472f510f3b131af15d90f89a961",
+    "freeze_gate_sha256": "7c09f21e57fa91cef9a742476a4718e217000c2766c2a75e35e7d7f06a400502",
+    "gate_hashes_sha256": "c77f1f80a4677f41a2d79f3d918110f37557f850570726032d9200e7b6e3b0d8",
+    "evidence_pipeline_sha256": "234c76ee3aff086431939b7e948d1600693e89131263148f1fa851f1159944c1",
+    "config_sha256": "8a6e6948a156f23771a57ab0423a089680a8b73cc783f8d2088606e3361045d0",
+    "dependency_lock_sha256": "cdcc3127e0caf34a019f9ebdb38984603b586a1e79b993a296a33bc8f310cd7f",
+    "runtime_manifest_sha256": "53361f1d2206c03c0bdb6722fe5267d94ff2e37507d8fe30a8a6217ce9f30f6c",
+    "runtime_integrity_validation_sha256": "5ac481f244044db8ca2299ae4430d20332afbefec59ead4f93437b01fab86453",
+    "freeze_readiness_gate_sha256": "dbce72120e5c41f276cbd7b005b8d176333d0ff5186bd1692c6f747443c7c267",
+    "model_routes": [
+      "openrouter/openai/gpt-4o",
+      "openrouter/openai/gpt-4o-mini"
+    ],
+    "generation_parameters": {
+      "allowed_tries": 2,
+      "arm_execution_order_seed": 640064,
+      "enable_summarize_research": false,
+      "predictions_per_research_report": 1,
+      "research_reports_per_question": 1,
+      "temperature": 0.3,
+      "timeout_seconds": 40,
+      "use_research_summary_to_forecast": false
+    },
+    "compute_budget_policy": "ONE_RESEARCH_REPORT_PER_QUESTION;ONE_PREDICTION_PER_REPORT;NO_EXTERNAL_RESEARCH;MATCHED_REASONING_AND_PARSER_ROUTES_BOTH_ARMS"
+  },
+  "readiness_provenance": {
+    "status": "READY_FOR_FORMAL_FREEZE",
+    "run_id": 33342243349,
+    "run_attempt": 1,
+    "candidate_evaluation_commit_sha": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+    "check_count": 56,
+    "readiness_record_sha256": "80d5a8bdbca000b607420cccc51a742e86e61d54fb8e595b7bc424ae1c471860",
+    "artifact_digest": "sha256:be2e18e197ca06c10d6b06a79c15325fca694947833100270a9a38964b4e4182",
+    "artifact_id": 9740905566,
+    "checked_at_utc": "2026-08-30T23:36:57.714184+00:00"
   },
   "development_separation": {
     "frozen_evaluation_branch_mutable_during_cycle": false,
     "parallel_development_allowed_on_other_branches": true,
     "outcome_driven_changes_retroactively_applied": false
   },
-  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until an explicit formal freeze step after freeze-readiness passes."
+  "notes": "FORMALLY FROZEN AND TARGET-UNBOUND. The evaluation implementation is frozen to commit 1571ba3af0cf941bcd66708a2b3bbba1411d26b8 after a 56-check readiness pass. No scored target has been selected or inspected, target binding remains UNBOUND, scored authorization remains closed, and scored execution remains forbidden until the predeclared post-freeze binding and separate one-cycle authorization gates are satisfied."
 }
