@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0",
+  "status": "FREEZE_CANDIDATE",
+  "experiment": "SCOPE FutureEval Cycle 1 paired benchmark",
+  "forecast_mode": "INITIAL_FORECAST_ONLY",
+  "information_policy": "CYCLE1_QUESTION_SNAPSHOT_ONLY_NO_EXTERNAL_RESEARCH",
+  "information_cutoff_rule": "FIRST_CAPTURED_IMMUTABLE_QUESTION_SNAPSHOT",
+  "model_routes": {
+    "reasoning": "openrouter/openai/gpt-4o",
+    "parser": "openrouter/openai/gpt-4o-mini"
+  },
+  "generation_parameters": {
+    "temperature": 0.3,
+    "timeout_seconds": 40,
+    "allowed_tries": 2,
+    "research_reports_per_question": 1,
+    "predictions_per_research_report": 1,
+    "enable_summarize_research": false,
+    "use_research_summary_to_forecast": false,
+    "arm_execution_order_seed": 640064
+  },
+  "compute_budget_policy": "ONE_RESEARCH_REPORT_PER_QUESTION;ONE_PREDICTION_PER_REPORT;NO_EXTERNAL_RESEARCH;MATCHED_REASONING_AND_PARSER_ROUTES_BOTH_ARMS",
+  "frozen_source_roles": {
+    "scope_treatment_and_prompt_source": "benchmark/scope_structured_bot.py",
+    "matched_control_and_prompt_source": "main.py",
+    "cycle_config": "benchmark/scope_cycle1_config_draft.json",
+    "input_sanitizer": "benchmark/scope_input_sanitization.py",
+    "paired_snapshot_and_randomization_logic": "benchmark/scope_paired_dryrun.py",
+    "scored_executor": "benchmark/scope_scored_cycle_runner.py",
+    "scored_gate_logic": "benchmark/scope_benchmark_freeze_check.py",
+    "scoring_implementation": "benchmark/scope_scoring.py",
+    "statistics_implementation": "benchmark/scope_statistics.py",
+    "resolution_adapter": "benchmark/scope_resolution_adapter.py",
+    "protocol": "benchmark/SCOPE_BENCHMARK_PROTOCOL_v0.1.md",
+    "arm_spec": "benchmark/SCOPE_ARM_SPEC_v0.1.md",
+    "scoring_spec": "benchmark/SCOPE_SCORING_SPEC_v0.1.md",
+    "dependency_lock": "poetry.lock"
+  },
+  "prompt_hash_semantics": "Because both treatment and control prompts are defined in their respective source files, prompt SHA-256 values freeze the complete prompt-bearing source file. This is intentionally stricter than hashing extracted string literals alone.",
+  "evidence_pipeline_hash_semantics": "The evidence-pipeline hash is a deterministic bundle hash over path+SHA-256 for scope_input_sanitization.py and scope_paired_dryrun.py.",
+  "target_policy": {
+    "selection_rule": "FIRST_ELIGIBLE_FUTURE_MINIBENCH_AFTER_FREEZE",
+    "minimum_hours_after_freeze": 24,
+    "question_level_content_inspection_before_binding": false
+  },
+  "publication_policy": "CONTROL_NEVER_PUBLISHED;SCOPE_PUBLISHED_ONLY_AFTER_BOTH_ARM_OUTPUTS_ARE_DURABLY_RECORDED",
+  "notes": "This manifest contains no target identity and performs no target discovery. It is part of the pre-target freeze candidate state."
+}
