@@ -9,7 +9,11 @@
     "binary",
     "multiple_choice",
     "numeric",
+    "discrete",
     "date"
+  ],
+  "question_formats_excluded": [
+    "conditional"
   ],
   "information_policy": {
     "external_research": "DISABLED_CYCLE1",
@@ -38,7 +42,7 @@
   },
   "randomization": {
     "arm_execution_order_seed": 640064,
-    "note": "Reserved for the frozen paired executor. Dry-run may execute whole arms sequentially but must preserve input parity."
+    "note": "The frozen paired executor randomizes arm execution order deterministically per question while preserving identical input snapshots."
   },
   "scored_run_enabled": false
 }
