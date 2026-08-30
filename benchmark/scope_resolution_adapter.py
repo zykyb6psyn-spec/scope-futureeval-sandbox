@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
 from typing import Any
 
 from scope_scoring import OUTCOME_ABOVE, OUTCOME_BELOW
@@ -51,21 +51,35 @@ def _normalize_resolution(question_type: str, value: Any) -> Any:
         raise ValueError(f"invalid binary resolution {value!r}")
 
     if question_type == "multiple_choice":
-        _require(isinstance(value, str) and value.strip() != "", "MC resolution must be a nonempty string")
+        _require(
+            isinstance(value, str) and value.strip() != "",
+            "MC resolution must be a nonempty string",
+        )
         return value
 
     if question_type in {"numeric", "discrete"}:
-        if value in {OUTCOME_ABOVE, OUTCOME_BELOW}:
+        if isinstance(value, str) and value in {OUTCOME_ABOVE, OUTCOME_BELOW}:
             return value
         return float(value)
 
     if question_type == "date":
-        if value in {OUTCOME_ABOVE, OUTCOME_BELOW}:
+        if isinstance(value, str) and value in {OUTCOME_ABOVE, OUTCOME_BELOW}:
             return value
-        _require(isinstance(value, str), "date resolution must be ISO text or an out-of-bound marker")
+        _require(
+            isinstance(value, str) and value.strip() != "",
+            "date resolution must be ISO text or an out-of-bound marker",
+        )
         return value
 
     raise ValueError(f"unsupported question type {question_type}")
+
+
+def _resolution_provenance(resolution_record: dict[str, Any]) -> tuple[str, str]:
+    source_sha256 = resolution_record.get("source_sha256")
+    captured_at_utc = resolution_record.get("captured_at_utc")
+    _require(source_sha256 not in (None, ""), "resolution record missing provenance source_sha256")
+    _require(captured_at_utc not in (None, ""), "resolution record missing captured_at_utc")
+    return str(source_sha256), str(captured_at_utc)
 
 
 def adapt_pair_to_resolution(
@@ -76,34 +90,38 @@ def adapt_pair_to_resolution(
 
     The join key is the immutable Metaculus question/subquestion ID, never the
     display URL or post ID. Group/post ID is retained only as the uncertainty
-    cluster key.
+    cluster key. Resolution provenance is required even for exclusions so that
+    every scoring decision remains reconstructable.
     """
     question_id = str(forecast_record.get("question_id", ""))
     _require(question_id != "", "forecast record missing question_id")
-    _require(str(resolution_record.get("question_id", "")) == question_id,
-             "resolution question_id does not match forecast question_id")
+    _require(
+        str(resolution_record.get("question_id", "")) == question_id,
+        "resolution question_id does not match forecast question_id",
+    )
 
     qclass = str(forecast_record.get("question_type", ""))
     _require(qclass in SUPPORTED_TYPES, f"unsupported frozen forecast type {qclass}")
     question_type = SUPPORTED_TYPES[qclass]
 
-    _require(forecast_record.get("cluster_id") not in (None, ""), "forecast record missing cluster_id")
-    _require(forecast_record.get("question_snapshot_sha256") not in (None, ""),
-             "forecast record missing immutable question snapshot hash")
+    _require(
+        forecast_record.get("cluster_id") not in (None, ""),
+        "forecast record missing cluster_id",
+    )
+    _require(
+        forecast_record.get("question_snapshot_sha256") not in (None, ""),
+        "forecast record missing immutable question snapshot hash",
+    )
 
-    for arm in ("scope", "control"):
-        result = forecast_record.get(arm, {}).get("result", {})
-        _require(result.get("kind") == "forecast_report", f"{arm} did not produce a forecast report")
-        _require("prediction" in result, f"{arm} forecast is missing prediction")
-        _require(result.get("prediction_sha256") not in (None, ""),
-                 f"{arm} forecast is missing prediction hash")
+    source_sha256, captured_at_utc = _resolution_provenance(resolution_record)
 
-    platform_state = str(resolution_record.get("state", "")).lower()
+    platform_state = str(resolution_record.get("state", "")).strip().lower()
     raw_resolution = resolution_record.get("resolution")
-    normalized = _normalize_resolution(question_type, raw_resolution)
 
-    if platform_state != "resolved" or normalized in CANCELED_RESOLUTIONS:
-        reason = "ANNULLED_OR_NONRESOLVED_BY_PLATFORM"
+    # A non-resolved platform state is an auditable exclusion. Do not try to
+    # coerce a missing/partial resolution value first, because that would turn
+    # a valid exclusion into an adapter crash.
+    if platform_state != "resolved":
         return AdapterResult(
             status="EXCLUDED",
             score_record=None,
@@ -111,20 +129,48 @@ def adapt_pair_to_resolution(
                 "question_id": question_id,
                 "cluster_id": str(forecast_record["cluster_id"]),
                 "question_type": question_type,
-                "reason_code": reason,
+                "reason_code": "ANNULLED_OR_NONRESOLVED_BY_PLATFORM",
                 "platform_state": platform_state,
-                "resolution": normalized,
-                "resolution_source_sha256": resolution_record.get("source_sha256"),
+                "resolution": raw_resolution,
+                "resolution_source_sha256": source_sha256,
+                "resolution_captured_at_utc": captured_at_utc,
             },
         )
 
-    _require(resolution_record.get("source_sha256") not in (None, ""),
-             "resolution record missing provenance source_sha256")
-    _require(resolution_record.get("captured_at_utc") not in (None, ""),
-             "resolution record missing captured_at_utc")
+    normalized = _normalize_resolution(question_type, raw_resolution)
+    if normalized in CANCELED_RESOLUTIONS:
+        return AdapterResult(
+            status="EXCLUDED",
+            score_record=None,
+            exclusion={
+                "question_id": question_id,
+                "cluster_id": str(forecast_record["cluster_id"]),
+                "question_type": question_type,
+                "reason_code": "ANNULLED_OR_NONRESOLVED_BY_PLATFORM",
+                "platform_state": platform_state,
+                "resolution": normalized,
+                "resolution_source_sha256": source_sha256,
+                "resolution_captured_at_utc": captured_at_utc,
+            },
+        )
+
+    for arm in ("scope", "control"):
+        result = forecast_record.get(arm, {}).get("result", {})
+        _require(
+            result.get("kind") == "forecast_report",
+            f"{arm} did not produce a forecast report",
+        )
+        _require("prediction" in result, f"{arm} forecast is missing prediction")
+        _require(
+            result.get("prediction_sha256") not in (None, ""),
+            f"{arm} forecast is missing prediction hash",
+        )
+
+    forecast_id = forecast_record.get("forecast_id") or forecast_record.get("record_sha256")
+    _require(forecast_id not in (None, ""), "forecast record missing forecast_id/record_sha256")
 
     score_record = {
-        "forecast_id": str(forecast_record.get("forecast_id") or forecast_record.get("record_sha256")),
+        "forecast_id": str(forecast_id),
         "question_id": question_id,
         "post_id": str(forecast_record.get("post_id", "")),
         "cluster_id": str(forecast_record["cluster_id"]),
@@ -133,9 +179,17 @@ def adapt_pair_to_resolution(
         "scope_prediction": forecast_record["scope"]["result"]["prediction"],
         "control_prediction": forecast_record["control"]["result"]["prediction"],
         "question_snapshot_sha256": str(forecast_record["question_snapshot_sha256"]),
-        "scope_prediction_sha256": str(forecast_record["scope"]["result"]["prediction_sha256"]),
-        "control_prediction_sha256": str(forecast_record["control"]["result"]["prediction_sha256"]),
-        "resolution_source_sha256": str(resolution_record["source_sha256"]),
-        "resolution_captured_at_utc": str(resolution_record["captured_at_utc"]),
+        "scope_prediction_sha256": str(
+            forecast_record["scope"]["result"]["prediction_sha256"]
+        ),
+        "control_prediction_sha256": str(
+            forecast_record["control"]["result"]["prediction_sha256"]
+        ),
+        "resolution_source_sha256": source_sha256,
+        "resolution_captured_at_utc": captured_at_utc,
     }
-    return AdapterResult(status="SCORED_ELIGIBLE", score_record=score_record, exclusion=None)
+    return AdapterResult(
+        status="SCORED_ELIGIBLE",
+        score_record=score_record,
+        exclusion=None,
+    )
