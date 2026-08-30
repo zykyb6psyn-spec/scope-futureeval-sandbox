@@ -14,7 +14,9 @@ on:
       - benchmark/scope_paired_dryrun.py
       - benchmark/scope_scored_cycle_runner.py
       - benchmark/scope_benchmark_freeze_check.py
+      - benchmark/scope_gate_hashes.py
       - benchmark/scope_scored_gate_validation.py
+      - benchmark/scope_runtime_integrity_validation.py
       - benchmark/scope_scoring.py
       - benchmark/scope_scoring_validation.py
       - benchmark/scope_statistics.py
@@ -60,7 +62,9 @@ jobs:
             benchmark/scope_paired_dryrun.py \
             benchmark/scope_scored_cycle_runner.py \
             benchmark/scope_benchmark_freeze_check.py \
+            benchmark/scope_gate_hashes.py \
             benchmark/scope_scored_gate_validation.py \
+            benchmark/scope_runtime_integrity_validation.py \
             benchmark/scope_scoring.py \
             benchmark/scope_scoring_validation.py \
             benchmark/scope_statistics.py \
@@ -75,6 +79,9 @@ jobs:
 
       - name: Re-prove scored executor fails closed before target retrieval
         run: poetry run python benchmark/scope_scored_gate_validation.py
+
+      - name: Prove frozen runtime rejects tampering
+        run: poetry run python benchmark/scope_runtime_integrity_validation.py
 
       - name: Run integral freeze readiness gate
         run: poetry run python benchmark/scope_freeze_readiness.py
