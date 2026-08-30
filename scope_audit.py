@@ -14,8 +14,12 @@ AUDIT_DIR.mkdir(exist_ok=True)
 TRACKED_FILES = [
     "scope_smoke_test.py",
     "scope_audit.py",
+    "scope_integrity_check.py",
     "scope_sandbox_config.json",
     "scope_preregistration.json",
+    "SCOPE_SANDBOX_GOVERNANCE.md",
+    ".github/workflows/scope_smoke_test.yaml",
+    ".github/workflows/scope_integrity_check.yaml",
     "main.py",
     "pyproject.toml",
     "poetry.lock",
