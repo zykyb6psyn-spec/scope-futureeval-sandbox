@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.1",
+  "schema_version": "1.2",
   "protocol_version": "0.1",
   "status": "DESIGN_DRAFT",
   "scored_run_enabled": false,
@@ -132,8 +132,12 @@
     "log_scaled_location_semantics_checked": true,
     "multiple_choice_other_fallback_checked": true,
     "offline_validation_status": "PASS",
-    "offline_validation_run_id": 33340708121,
-    "resolved_record_adapter_validation_required_before_freeze": true
+    "offline_validation_run_id": 33341020190,
+    "offline_validation_head_sha": "848ce403f0ea27db00e6f63691e65a0b67bd2b97",
+    "offline_validation_test_count": 19,
+    "offline_validation_record_sha256": "bc3beb702c2939fa458f0a09bf1ffc4851deb2d2b427c9a4a2231f45e3dfa0d8",
+    "offline_validation_artifact_digest": "sha256:18d19ed1b72f8a4b258469aaf435aa7b5369ec326ebb8fee65d47f5546fdb664",
+    "resolved_record_adapter_validation_complete": true
   },
   "freeze_record": {
     "frozen_at_utc": null,
@@ -157,5 +161,5 @@
     "parallel_development_allowed_on_other_branches": true,
     "outcome_driven_changes_retroactively_applied": false
   },
-  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until all implementation and adapter checks are complete."
+  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until final design acceptance and freeze readiness checks are complete."
 }
