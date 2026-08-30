@@ -6,7 +6,13 @@ on:
     branches:
       - scope-benchmark-design-v0.1
     paths:
-      - "benchmark/**"
+      - "benchmark/scope_structured_bot.py"
+      - "benchmark/scope_paired_dryrun.py"
+      - "benchmark/scope_cycle1_config_draft.json"
+      - "benchmark/scope_benchmark_freeze_check.py"
+      - "main.py"
+      - "pyproject.toml"
+      - "poetry.lock"
       - ".github/workflows/scope_benchmark_paired_dryrun.yaml"
 
 permissions:
