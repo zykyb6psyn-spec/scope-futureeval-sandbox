@@ -5,6 +5,7 @@ import json
 import math
 from pathlib import Path
 
+from scope_resolution_adapter import adapt_pair_to_resolution
 from scope_scoring import (
     OUTCOME_ABOVE,
     PairScore,
@@ -57,7 +58,6 @@ def simple_cdf(middle_height: float) -> dict:
 
 
 def log_scaled_cdf(middle_height: float) -> dict:
-    # With lower=1, upper=100, zero_point=0, unscaled location 0.5 maps to 10.
     return {
         "declared_percentiles": [
             {"value": 1.0, "percentile": 0.0},
@@ -106,6 +106,57 @@ def make_pair(index: int, delta: float, cluster: str | None = None) -> PairScore
     )
 
 
+def binary_forecast_record(question_id: str = "101", page_url: str = "https://example.invalid/q") -> dict:
+    return {
+        "record_sha256": f"record-{question_id}",
+        "question_id": question_id,
+        "post_id": "55",
+        "cluster_id": "post:55",
+        "question_url": page_url,
+        "question_type": "BinaryQuestion",
+        "question_snapshot_sha256": f"snapshot-{question_id}",
+        "scope": {
+            "result": {
+                "kind": "forecast_report",
+                "prediction": 0.8,
+                "prediction_sha256": f"scope-{question_id}",
+            }
+        },
+        "control": {
+            "result": {
+                "kind": "forecast_report",
+                "prediction": 0.4,
+                "prediction_sha256": f"control-{question_id}",
+            }
+        },
+    }
+
+
+def resolution_record(
+    question_id: str = "101",
+    *,
+    state: str = "resolved",
+    resolution=True,
+) -> dict:
+    return {
+        "question_id": question_id,
+        "state": state,
+        "resolution": resolution,
+        "captured_at_utc": "2026-09-01T00:00:00+00:00",
+        "source_sha256": f"resolution-source-{question_id}",
+    }
+
+
+def expect_value_error(fn, contains: str) -> None:
+    try:
+        fn()
+    except ValueError as exc:
+        if contains not in str(exc):
+            raise AssertionError(f"expected ValueError containing {contains!r}, got {exc!r}") from exc
+    else:
+        raise AssertionError(f"expected ValueError containing {contains!r}")
+
+
 def main() -> None:
     tests: list[str] = []
 
@@ -124,14 +175,11 @@ def main() -> None:
     assert_close(multiple_choice_outcome_probability(mc, "Later-added option"), 0.1)
     tests.append("multiple-choice direct and official Other-fallback semantics")
 
-    # Official Metaculus boundary mapping uses int(u*N + 1 - 1e-10).
-    # At the exact midpoint u=0.5 with N=2 this maps to bucket 1, not bucket 2.
     assert_close(continuous_bucket_probability(simple_cdf(0.8), 2.0), 0.8)
     assert_close(continuous_bucket_probability(simple_cdf(0.8), 5.0), 0.8)
     assert_close(continuous_bucket_probability(simple_cdf(0.8), 8.0), 0.2)
     tests.append("continuous inbound bucket and exact-grid-boundary semantics")
 
-    # Same boundary rule on the platform's unscaled coordinate for log questions.
     assert_close(continuous_bucket_probability(log_scaled_cdf(0.7), 10.0), 0.7)
     tests.append("log-scaled continuous bucket mapping")
 
@@ -164,6 +212,54 @@ def main() -> None:
     numeric_pair = score_pair(numeric_record)
     assert_close(numeric_pair.delta_log_score, math.log(2.0))
     tests.append("paired continuous PMF log-score difference")
+
+    # Resolution-adapter tests: immutable question ID is the join key, not URL.
+    adapted = adapt_pair_to_resolution(binary_forecast_record(), resolution_record())
+    if adapted.status != "SCORED_ELIGIBLE" or adapted.score_record is None:
+        raise AssertionError(adapted)
+    adapted_pair = score_pair(adapted.score_record)
+    assert_close(adapted_pair.delta_log_score, math.log(2.0))
+    tests.append("resolution adapter produces score-eligible immutable-ID pair")
+
+    # Same display URL can belong to different subquestions; question IDs must remain distinct.
+    same_url = "https://www.metaculus.com/questions/55"
+    first = binary_forecast_record("101", same_url)
+    second = binary_forecast_record("102", same_url)
+    first_adapted = adapt_pair_to_resolution(first, resolution_record("101"))
+    second_adapted = adapt_pair_to_resolution(second, resolution_record("102"))
+    if first_adapted.score_record["question_id"] == second_adapted.score_record["question_id"]:
+        raise AssertionError("distinct subquestion IDs collapsed despite shared post URL")
+    tests.append("resolution adapter never joins by shared display URL")
+
+    expect_value_error(
+        lambda: adapt_pair_to_resolution(binary_forecast_record("101"), resolution_record("999")),
+        "does not match",
+    )
+    tests.append("resolution adapter rejects mismatched immutable question ID")
+
+    nonresolved = adapt_pair_to_resolution(
+        binary_forecast_record(),
+        resolution_record(state="closed", resolution=None),
+    )
+    if nonresolved.status != "EXCLUDED" or nonresolved.exclusion["reason_code"] != "ANNULLED_OR_NONRESOLVED_BY_PLATFORM":
+        raise AssertionError(nonresolved)
+    tests.append("nonresolved record is auditable exclusion without resolution coercion")
+
+    annulled = adapt_pair_to_resolution(
+        binary_forecast_record(),
+        resolution_record(state="resolved", resolution="annulled"),
+    )
+    if annulled.status != "EXCLUDED":
+        raise AssertionError(annulled)
+    tests.append("annulled resolved-state record is auditable exclusion")
+
+    missing_provenance = resolution_record()
+    missing_provenance["source_sha256"] = None
+    expect_value_error(
+        lambda: adapt_pair_to_resolution(binary_forecast_record(), missing_provenance),
+        "source_sha256",
+    )
+    tests.append("resolution adapter requires provenance even for scoring decisions")
 
     equal_pairs = [make_pair(i, 0.0) for i in range(30)]
     equal_boot_1 = cluster_bootstrap_mean_delta(equal_pairs, resamples=1000, seed=42)
@@ -236,13 +332,14 @@ def main() -> None:
     tests.append("catastrophic relative-tail gate")
 
     validation = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "PASS",
         "test_count": len(tests),
         "tests": tests,
         "implementation_hashes": {
             "scope_scoring.py": sha256_file(ROOT / "scope_scoring.py"),
             "scope_statistics.py": sha256_file(ROOT / "scope_statistics.py"),
+            "scope_resolution_adapter.py": sha256_file(ROOT / "scope_resolution_adapter.py"),
             "scope_scoring_validation.py": sha256_file(ROOT / "scope_scoring_validation.py"),
         },
         "official_backend_parity_basis": {
@@ -263,14 +360,16 @@ def main() -> None:
             "linear and log-scaled resolution bucket mapping",
             "out-of-bound tail scoring",
             "paired raw log-score difference in nats",
+            "immutable question-ID resolution joining and provenance gates",
+            "nonresolved and annulled exclusion handling",
             "deterministic cluster bootstrap",
             "positive, negative, insufficient-sample, technical-failure and tail-risk gates",
         ],
         "interpretation": (
             "The scorer mirrors the probability/PMF input consumed by the open-source Metaculus "
-            "backend. The SCOPE primary endpoint intentionally uses the raw paired natural-log "
-            "ratio before Metaculus display scaling so it measures direct information gain over "
-            "the matched control. A final resolved-record adapter test remains required before freeze."
+            "backend. The SCOPE primary endpoint uses the raw paired natural-log ratio before "
+            "Metaculus display scaling to measure direct information gain over the matched control. "
+            "The adapter validation confirms fail-closed joining by immutable question/subquestion ID."
         ),
     }
     (OUT / "scoring_validation_record.json").write_text(
