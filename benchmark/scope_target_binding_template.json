@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "status": "UNBOUND",
+  "freeze_commit_sha": null,
+  "freeze_timestamp_utc": null,
+  "selection_rule": "FIRST_ELIGIBLE_FUTURE_MINIBENCH_AFTER_FREEZE",
+  "minimum_hours_after_freeze": 24,
+  "selected_target_cycle": null,
+  "selected_target_id": null,
+  "target_open_timestamp_utc": null,
+  "bound_at_utc": null,
+  "selected_by_predeclared_rule": null,
+  "question_level_content_inspected_before_binding": false,
+  "binding_record_sha256": null,
+  "notes": "This record is intentionally separate from the frozen preregistration. It may be completed only after the freeze commit exists and only by applying the predeclared target-selection rule. Binding must not alter frozen forecast code, prompts, metrics or analysis logic."
+}
