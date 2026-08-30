@@ -41,6 +41,18 @@ def expect_closed(fn, contains: str) -> None:
         raise AssertionError(f"expected ScoredGateClosed containing {contains!r}")
 
 
+def current_expected_closed_gate(prereg: dict, binding: dict, auth: dict) -> str:
+    """Return the gate that must be closed in the repository's current lifecycle state."""
+    status = prereg.get("status")
+    if status == "DESIGN_DRAFT":
+        return "Gate 1 closed"
+    if status == "FROZEN_UNBOUND":
+        require(binding.get("status") == "UNBOUND", "FROZEN_UNBOUND state requires an UNBOUND target record")
+        require(auth.get("status") == "NOT_AUTHORIZED", "FROZEN_UNBOUND state requires closed authorization")
+        return "Gate 2 closed"
+    raise AssertionError(f"unsupported current preregistration lifecycle state for gate validation: {status!r}")
+
+
 def synthetic_authorized_records() -> tuple[dict, dict, dict, str]:
     prereg = load_json(PREREG_PATH)
     prereg = copy.deepcopy(prereg)
@@ -114,7 +126,7 @@ def synthetic_authorized_records() -> tuple[dict, dict, dict, str]:
     return prereg, binding, auth, prereg_file_hash
 
 
-async def verify_current_files_fail_before_fetch() -> None:
+async def verify_current_files_fail_before_fetch(expected_gate: str) -> None:
     fetch_called = False
 
     def sentinel_fetch(_target: str):
@@ -125,9 +137,9 @@ async def verify_current_files_fail_before_fetch() -> None:
     try:
         await execute_scored_cycle(question_fetcher=sentinel_fetch)
     except ScoredGateClosed as exc:
-        require("Gate 1 closed" in str(exc), f"unexpected current gate failure: {exc!r}")
+        require(expected_gate in str(exc), f"unexpected current gate failure: {exc!r}")
     else:
-        raise AssertionError("current DESIGN_DRAFT files unexpectedly opened the scored executor")
+        raise AssertionError("current repository state unexpectedly opened the scored executor")
 
     require(fetch_called is False, "network/question fetch was reached before scored authorization")
 
@@ -138,6 +150,7 @@ def main() -> None:
     current_prereg = load_json(PREREG_PATH)
     current_binding = load_json(BINDING_PATH)
     current_auth = load_json(AUTH_PATH)
+    expected_gate = current_expected_closed_gate(current_prereg, current_binding, current_auth)
     expect_closed(
         lambda: validate_scored_gate(
             current_prereg,
@@ -145,12 +158,12 @@ def main() -> None:
             current_auth,
             prereg_file_sha256=sha256_file(PREREG_PATH),
         ),
-        "Gate 1 closed",
+        expected_gate,
     )
-    tests.append("current design draft cannot pass Gate 1")
+    tests.append(f"current lifecycle state {current_prereg.get('status')} remains closed at {expected_gate}")
 
-    asyncio.run(verify_current_files_fail_before_fetch())
-    tests.append("current closed gate stops before target retrieval/network fetch")
+    asyncio.run(verify_current_files_fail_before_fetch(expected_gate))
+    tests.append("current closed lifecycle state stops before target retrieval/network fetch")
 
     prereg, binding, auth, prereg_hash = synthetic_authorized_records()
     target = validate_scored_gate(prereg, binding, auth, prereg_file_sha256=prereg_hash)
@@ -214,17 +227,19 @@ def main() -> None:
     tests.append("explicit authorization flag is independently required")
 
     record = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "status": "PASS",
         "test_count": len(tests),
         "tests": tests,
+        "current_lifecycle_state": current_prereg.get("status"),
+        "current_expected_closed_gate": expected_gate,
         "implementation_hashes": {
             "scope_gate_hashes.py": sha256_file(ROOT / "scope_gate_hashes.py"),
             "scope_scored_cycle_runner.py": sha256_file(ROOT / "scope_scored_cycle_runner.py"),
             "scope_scored_gate_validation.py": sha256_file(ROOT / "scope_scored_gate_validation.py"),
         },
         "critical_property": (
-            "The current DESIGN_DRAFT / UNBOUND / NOT_AUTHORIZED repository state aborts the scored executor "
+            "Both pre-freeze DESIGN_DRAFT and post-freeze FROZEN_UNBOUND lifecycle states remain fail-closed "
             "before target retrieval. A scored target becomes reachable only when frozen preregistration, "
             "post-freeze target binding and explicit one-cycle authorization all cryptographically agree."
         ),
