@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import bisect
 import math
-from dataclasses import dataclass, asdict
+from dataclasses import asdict, dataclass
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -39,7 +39,8 @@ def _require_probability(p: float, label: str) -> float:
 def _safe_log_probability(p: float) -> float:
     # A zero-probability forecast is a catastrophic error under log scoring.
     # We retain a finite computational sentinel instead of silently changing
-    # the forecast. Any use of this floor is separately detectable from p==0.
+    # the stored forecast. Any activation remains detectable because the
+    # original outcome probability is preserved in PairScore.
     return math.log(max(float(p), MIN_POSITIVE))
 
 
@@ -62,9 +63,18 @@ def multiple_choice_outcome_probability(prediction: dict[str, Any], resolution: 
     total = sum(probabilities.values())
     if not math.isclose(total, 1.0, rel_tol=0.0, abs_tol=1e-6):
         raise ValueError(f"multiple-choice probabilities must sum to 1, got {total}")
-    if resolution not in probabilities:
-        raise ValueError(f"resolution {resolution!r} not found in predicted options")
-    return probabilities[resolution]
+
+    if resolution in probabilities:
+        return probabilities[resolution]
+
+    # Official Metaculus scoring reads a newly-added/otherwise unavailable
+    # resolution option from the forecast's final "Other" bucket.
+    if "Other" in probabilities:
+        return probabilities["Other"]
+
+    raise ValueError(
+        f"resolution {resolution!r} not found in predicted options and no Other bucket exists"
+    )
 
 
 def _cdf_points(prediction: dict[str, Any]) -> tuple[list[float], list[float]]:
@@ -82,19 +92,54 @@ def _cdf_points(prediction: dict[str, Any]) -> tuple[list[float], list[float]]:
     return values, heights
 
 
+def _scaled_to_unscaled_location(outcome: float, prediction: dict[str, Any]) -> float:
+    lower = float(prediction["lower_bound"])
+    upper = float(prediction["upper_bound"])
+    zero_point_raw = prediction.get("zero_point")
+
+    if upper <= lower:
+        raise ValueError("upper_bound must exceed lower_bound")
+
+    if zero_point_raw is None:
+        return (outcome - lower) / (upper - lower)
+
+    zero_point = float(zero_point_raw)
+    deriv_ratio = (upper - zero_point) / (lower - zero_point)
+    numerator = (outcome - lower) * (deriv_ratio - 1.0) + (upper - lower)
+    if numerator <= 0.0 or deriv_ratio <= 0.0 or math.isclose(deriv_ratio, 1.0):
+        raise ValueError("invalid log-scaled numeric geometry")
+    return (math.log(numerator) - math.log(upper - lower)) / math.log(deriv_ratio)
+
+
+def _date_resolution_to_timestamp(resolution: Any) -> float:
+    if isinstance(resolution, datetime):
+        dt = resolution
+    elif isinstance(resolution, str):
+        text = resolution.replace("Z", "+00:00")
+        dt = datetime.fromisoformat(text)
+    else:
+        return float(resolution)
+
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.timestamp()
+
+
 def continuous_bucket_probability(prediction: dict[str, Any], resolution: float | str) -> float:
-    """Return standardized probability mass in the resolution bucket.
+    """Return the exact standardized PMF mass used for the resolved bucket.
 
-    forecasting-tools serializes the final Metaculus-compatible CDF on the
-    platform grid. For an in-bound continuous/date outcome, log density equals
-    log(bucket_mass / common_bucket_width). In a paired comparison on the same
-    question, the bucket-width term cancels exactly, so the log-score difference
-    is the log ratio of the two standardized bucket masses.
+    Metaculus stores a continuous forecast as a CDF evaluated at evenly-spaced
+    *unscaled* locations. Backend scoring converts it to a PMF by consecutive
+    CDF differences plus explicit lower/upper tail buckets. The backend maps an
+    in-bound resolution to bucket index:
 
-    For discrete questions the same CDF differences are the PMF masses.
-    Out-of-bound outcomes are scored with their explicit tail mass.
+        max(int(u * N + 1 - 1e-10), 1)
+
+    where u is the unscaled location and N is inbound_outcome_count. This
+    implementation mirrors that rule, including the exact-grid-boundary
+    convention, so paired log-score differences operate on the same PMF mass.
     """
-    values, heights = _cdf_points(prediction)
+    _, heights = _cdf_points(prediction)
     lower = float(prediction["lower_bound"])
     upper = float(prediction["upper_bound"])
 
@@ -109,18 +154,20 @@ def continuous_bucket_probability(prediction: dict[str, Any], resolution: float 
     if outcome > upper:
         return 1.0 - heights[-1]
 
-    # Boundary semantics from forecasting-tools:
-    # cdf[0] = P(Y < lower), so Y == lower belongs to the first inbound bucket.
-    # cdf[-1] = P(Y <= upper), so Y == upper belongs to the last inbound bucket.
-    if outcome <= values[0]:
-        idx = 0
-    elif outcome >= values[-1]:
-        idx = len(values) - 2
-    else:
-        idx = bisect.bisect_right(values, outcome) - 1
-        idx = max(0, min(idx, len(values) - 2))
+    n_inbound = len(heights) - 1
+    u = _scaled_to_unscaled_location(outcome, prediction)
 
-    mass = heights[idx + 1] - heights[idx]
+    if u < 0.0:
+        return heights[0]
+    if u > 1.0:
+        return 1.0 - heights[-1]
+    if math.isclose(u, 1.0, rel_tol=0.0, abs_tol=1e-12):
+        bucket_index = n_inbound
+    else:
+        bucket_index = max(int(u * n_inbound + 1.0 - 1e-10), 1)
+        bucket_index = min(bucket_index, n_inbound)
+
+    mass = heights[bucket_index] - heights[bucket_index - 1]
     if mass < -1e-12:
         raise ValueError(f"negative CDF bucket mass {mass}")
     return max(0.0, mass)
@@ -131,8 +178,14 @@ def outcome_probability(question_type: str, prediction: Any, resolution: Any) ->
         return binary_outcome_probability(float(prediction), bool(resolution))
     if question_type == "multiple_choice":
         return multiple_choice_outcome_probability(prediction, str(resolution))
-    if question_type in {"numeric", "date", "discrete"}:
+    if question_type in {"numeric", "discrete"}:
         return continuous_bucket_probability(prediction, resolution)
+    if question_type == "date":
+        if resolution in {OUTCOME_BELOW, OUTCOME_ABOVE}:
+            parsed_resolution = resolution
+        else:
+            parsed_resolution = _date_resolution_to_timestamp(resolution)
+        return continuous_bucket_probability(prediction, parsed_resolution)
     raise ValueError(f"unsupported scored question type: {question_type}")
 
 
