@@ -20,6 +20,7 @@ from forecasting_tools import (
 )
 
 from main import SummerTemplateBot2026
+from scope_input_sanitization import assert_cycle1_sanitized, sanitize_question_for_cycle1
 from scope_structured_bot import ScopeStructuredBot2026
 
 
@@ -70,10 +71,10 @@ def question_identity(question: Any) -> dict[str, Any]:
 
 
 def restricted_question_snapshot(question: Any) -> dict[str, Any]:
-    """Only fields intentionally available to both reasoning arms.
+    """Serialize only Cycle-1 forecast evidence plus immutable identity.
 
-    Community/aggregate/leaderboard fields are deliberately not serialized.
-    Immutable identity fields are retained for provenance and later scoring.
+    Community/aggregate/leaderboard and hidden API fields have already been
+    removed by sanitize_question_for_cycle1 before this function is called.
     """
     identity = question_identity(question)
     data: dict[str, Any] = {
@@ -86,6 +87,7 @@ def restricted_question_snapshot(question: Any) -> dict[str, Any]:
         "fine_print": getattr(question, "fine_print", None),
         "open_time": str(getattr(question, "open_time", None)),
         "close_time": str(getattr(question, "close_time", None)),
+        "group_question_option": getattr(question, "group_question_option", None),
     }
 
     if isinstance(question, MultipleChoiceQuestion):
@@ -216,12 +218,13 @@ async def run() -> None:
     bots = {"scope": scope_bot, "control": control_bot}
 
     manifest: dict[str, Any] = {
-        "schema_version": "1.1",
+        "schema_version": "1.2",
         "run_kind": "paired_technical_dryrun",
         "started_at_utc": utc_now(),
         "config_sha256": sha256_data(config),
         "target": config["technical_dryrun_target"],
         "publish": False,
+        "input_policy": "CYCLE1_SANITIZED_QUESTION_SNAPSHOT_ONLY",
         "question_count_retrieved": len(questions),
         "paired_records": [],
         "exclusions": [],
@@ -230,7 +233,10 @@ async def run() -> None:
     previous_hash = "GENESIS"
     seed = config["randomization"]["arm_execution_order_seed"]
 
-    for question in questions:
+    for raw_question in questions:
+        question = sanitize_question_for_cycle1(raw_question)
+        assert_cycle1_sanitized(question)
+
         snapshot = restricted_question_snapshot(question)
         snapshot_sha = sha256_data(snapshot)
 
@@ -258,8 +264,17 @@ async def run() -> None:
             arm_results[arm] = {
                 "started_at_utc": started,
                 "finished_at_utc": finished,
+                "input_snapshot_sha256": snapshot_sha,
                 "result": report_record(report),
             }
+
+        # Explicit parity assertion: both arms must carry the identical immutable
+        # input snapshot hash before a paired record can be committed.
+        require(
+            arm_results["scope"]["input_snapshot_sha256"]
+            == arm_results["control"]["input_snapshot_sha256"],
+            "Input parity failure between SCOPE and control",
+        )
 
         record = {
             "question_id": snapshot["question_id"],
@@ -291,8 +306,14 @@ async def run() -> None:
         1 for record in manifest["paired_records"]
         if record["control"]["result"]["kind"] == "exception"
     )
+    parity_failures = sum(
+        1 for record in manifest["paired_records"]
+        if record["scope"]["input_snapshot_sha256"]
+        != record["control"]["input_snapshot_sha256"]
+    )
     manifest["scope_failure_count"] = scope_failures
     manifest["control_failure_count"] = control_failures
+    manifest["input_parity_failure_count"] = parity_failures
 
     output_path = OUTPUT_DIR / "paired_dryrun_manifest.json"
     output_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n", encoding="utf-8")
@@ -302,11 +323,12 @@ async def run() -> None:
     print(f"Exclusions: {manifest['exclusion_count']}")
     print(f"SCOPE failures: {scope_failures}")
     print(f"Control failures: {control_failures}")
+    print(f"Input parity failures: {parity_failures}")
     print(f"Ledger tip: {previous_hash}")
     print(f"Manifest: {output_path}")
 
-    if scope_failures or control_failures:
-        raise RuntimeError("Paired dry run completed with arm failure(s)")
+    if scope_failures or control_failures or parity_failures:
+        raise RuntimeError("Paired dry run completed with arm/parity failure(s)")
 
 
 if __name__ == "__main__":
