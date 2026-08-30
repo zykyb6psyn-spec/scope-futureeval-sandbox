@@ -28,6 +28,8 @@ CONFIG_PATH = ROOT / "scope_cycle1_config_draft.json"
 OUTPUT_DIR = ROOT / "dryrun_output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
+# DiscreteQuestion inherits NumericQuestion in forecasting-tools, so it is
+# covered by this tuple and receives the numeric SCOPE treatment.
 SUPPORTED_TYPES = (BinaryQuestion, MultipleChoiceQuestion, NumericQuestion, DateQuestion)
 
 
@@ -52,12 +54,30 @@ def require(condition: bool, message: str) -> None:
         raise RuntimeError(message)
 
 
+def question_identity(question: Any) -> dict[str, Any]:
+    question_id = getattr(question, "id_of_question", None)
+    post_id = getattr(question, "id_of_post", None)
+    require(question_id is not None, "Question must have immutable id_of_question")
+    require(post_id is not None, "Question must have id_of_post")
+    return {
+        "question_id": str(question_id),
+        "post_id": str(post_id),
+        # A Metaculus post may contain multiple related subquestions. Using the
+        # post as the statistical cluster is conservative and prevents shared
+        # post-level context from being treated as independent evidence.
+        "cluster_id": f"post:{post_id}",
+    }
+
+
 def restricted_question_snapshot(question: Any) -> dict[str, Any]:
     """Only fields intentionally available to both reasoning arms.
 
     Community/aggregate/leaderboard fields are deliberately not serialized.
+    Immutable identity fields are retained for provenance and later scoring.
     """
+    identity = question_identity(question)
     data: dict[str, Any] = {
+        **identity,
         "question_type": type(question).__name__,
         "page_url": str(getattr(question, "page_url", "")),
         "question_text": getattr(question, "question_text", None),
@@ -79,6 +99,7 @@ def restricted_question_snapshot(question: Any) -> dict[str, Any]:
                 "open_lower_bound": getattr(question, "open_lower_bound", None),
                 "open_upper_bound": getattr(question, "open_upper_bound", None),
                 "unit_of_measure": getattr(question, "unit_of_measure", None),
+                "zero_point": getattr(question, "zero_point", None),
             }
         )
 
@@ -195,7 +216,7 @@ async def run() -> None:
     bots = {"scope": scope_bot, "control": control_bot}
 
     manifest: dict[str, Any] = {
-        "schema_version": "1.0",
+        "schema_version": "1.1",
         "run_kind": "paired_technical_dryrun",
         "started_at_utc": utc_now(),
         "config_sha256": sha256_data(config),
@@ -216,6 +237,9 @@ async def run() -> None:
         if not isinstance(question, SUPPORTED_TYPES):
             manifest["exclusions"].append(
                 {
+                    "question_id": snapshot.get("question_id"),
+                    "post_id": snapshot.get("post_id"),
+                    "cluster_id": snapshot.get("cluster_id"),
                     "question_url": snapshot.get("page_url"),
                     "question_type": snapshot.get("question_type"),
                     "reason_code": "UNSUPPORTED_FROZEN_FORMAT",
@@ -238,6 +262,9 @@ async def run() -> None:
             }
 
         record = {
+            "question_id": snapshot["question_id"],
+            "post_id": snapshot["post_id"],
+            "cluster_id": snapshot["cluster_id"],
             "question_url": snapshot.get("page_url"),
             "question_type": snapshot.get("question_type"),
             "question_snapshot_sha256": snapshot_sha,
