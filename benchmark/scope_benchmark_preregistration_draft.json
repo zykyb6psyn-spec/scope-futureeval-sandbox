@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "protocol_version": "0.1",
   "status": "DESIGN_DRAFT",
   "scored_run_enabled": false,
@@ -139,6 +139,24 @@
     "offline_validation_artifact_digest": "sha256:18d19ed1b72f8a4b258469aaf435aa7b5369ec326ebb8fee65d47f5546fdb664",
     "resolved_record_adapter_validation_complete": true
   },
+  "input_parity_validation": {
+    "offline_validation_status": "PASS",
+    "offline_validation_run_id": 33341235709,
+    "offline_validation_head_sha": "b3443898ca40e4b60984a3416760348754e9f92b",
+    "offline_validation_test_count": 8,
+    "offline_validation_record_sha256": "5b98fa5c3425e2ef45ff73979f545ea572e26f75343ce9104b700725841c10ed",
+    "offline_validation_artifact_digest": "sha256:b5a41702246f612951f97db2d50ec1caefc04f055ad6b49ee0a0bba51c877d2b",
+    "sanitized_end_to_end_status": "PASS",
+    "sanitized_end_to_end_run_id": 33341202161,
+    "sanitized_end_to_end_head_sha": "e4440067bc6f53fa42566cc34d681dc4ad1e2d3a",
+    "sanitized_end_to_end_artifact_digest": "sha256:bef880c9fd80f9b7d2bb8de04bce310e3e96ccaa12c739f9c3c468e40d4c1ca3",
+    "sanitized_end_to_end_manifest_sha256": "e7685cad9526310512186709abe1fd756f3c134695ae5080295554a36f5adde3",
+    "sanitized_end_to_end_ledger_tip_sha256": "81f2a0d5e9e98f8df6e83c7018eeaaf58cf1c619b700c0b966425b0c176e949b",
+    "paired_question_count": 9,
+    "scope_failure_count": 0,
+    "control_failure_count": 0,
+    "input_parity_failure_count": 0
+  },
   "freeze_record": {
     "frozen_at_utc": null,
     "protocol_sha256": null,
@@ -161,5 +179,5 @@
     "parallel_development_allowed_on_other_branches": true,
     "outcome_driven_changes_retroactively_applied": false
   },
-  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until final design acceptance and freeze readiness checks are complete."
+  "notes": "Design draft only. No scored target is selected, no target questions may be inspected, and scored execution remains forbidden. Freeze hashes remain intentionally null until an explicit formal freeze step after freeze-readiness passes."
 }
