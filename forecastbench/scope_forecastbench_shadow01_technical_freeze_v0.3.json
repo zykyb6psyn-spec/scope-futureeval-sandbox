@@ -1,0 +1,48 @@
+{
+  "schema_version": "0.3",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "TECHNICALLY_FROZEN_GATE4_CLOSED",
+  "supersedes_technical_freeze": "scope_forecastbench_shadow01_technical_freeze_v0.2.json",
+  "runner_freeze_commit_sha": "9c57756e4cbcd4cefb1dc1b94fed9dd2fc78bd28",
+  "validation": {
+    "workflow": "SCOPE ForecastBench Shadow Validation",
+    "run_id": 33403312518,
+    "job_id": 99524673552,
+    "conclusion": "success",
+    "check_count": 15,
+    "validated_at_utc": "2026-08-31T14:34:24.610194+00:00",
+    "artifact_id": 9762136821,
+    "artifact_name": "scope-forecastbench-shadow-validation-33403312518-1",
+    "artifact_digest": "sha256:cc5ffbae06fad9f3319ec9972c8a505a2b9352610ae204cfb7fae96c5106e70e"
+  },
+  "frozen_file_sha256": {
+    "preregistration": "f546a9a0eae4a6709cf193abc3b9f4f4780fa252bb14843c90ab95b377e9d8ad",
+    "pre_retrieval_amendment": "7f6f2991c56a50ee3fca17915afba84f63cd9ebefd1631c03a8a8057bfed43b9",
+    "target_binding": "1a64702f365c4fd6f0c6dc4e0babaf7d8ea1b106c60dbeb8b7ffc921868e9c05",
+    "adapter": "4ba97de4944c7d0bb166e32da7091559f80bec5d4b2f0cfe021f5650ec59444c",
+    "adapter_validation": "9032c2abadb6a995f11f9736025cd5f7d8f61fd71f76871aec65727493ef58c3",
+    "runner": "86ebf20506cde137c60fb4fc964e540dbe0b13cc6211caa9c88814c29cfb6a81",
+    "execution_workflow": "7ce32de17d72bc5b3f458ca95ff2d4b8fd5b6e33a1e851eb52a8f4fdd1be3eff",
+    "gate_validation": "0b10d74fbcecd024252a0866647486af83f78fe9876899479beda5984e020739",
+    "frozen_scope_treatment": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f",
+    "frozen_control": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807"
+  },
+  "compatibility_change_from_v0.2": {
+    "field": "background",
+    "old_adapter_rule": "must be a non-empty string",
+    "new_adapter_rule": "must be a string; empty string is allowed and preserved",
+    "basis": "Official ForecastBench QuestionFrame declares background as Series[str] without a non-empty constraint.",
+    "content_based_tuning": false,
+    "selection_rule_changed": false,
+    "model_or_prompt_treatment_changed": false,
+    "control_changed": false
+  },
+  "attempt1_reference": "scope_forecastbench_shadow01_attempt1_failure_record.json",
+  "state_at_freeze": {
+    "gate4_authorized": false,
+    "authorization_status": "NOT_AUTHORIZED",
+    "real_model_execution_after_fix": false,
+    "futureeval_cycle1_modified": false
+  },
+  "next_permitted_step": "Separate explicit user authorization for exactly one new Shadow-01 attempt on the same bound target."
+}
