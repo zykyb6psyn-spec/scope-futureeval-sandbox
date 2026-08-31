@@ -1,0 +1,36 @@
+{
+  "schema_version": "0.1",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "BOUND_METADATA_ONLY",
+  "binding_rule": "Bind the official LLM question set associated with the 2026-08-30 ForecastBench round without question-level inspection.",
+  "target": {
+    "repository": "forecastingresearch/forecastbench-datasets",
+    "path": "datasets/question_sets/2026-08-30-llm.json",
+    "publication_commit_sha": "eefea7424aafb1329140b8916a8f49b62cc04744",
+    "publication_commit_timestamp_utc": "2026-08-30T00:12:30Z",
+    "git_blob_sha": "dd1d18715edd28102e04bc0a2ae22462120dbfb4",
+    "file_size_bytes": 1312712,
+    "source_identity_basis": "GitHub directory metadata and path-specific commit history only; file contents were not opened for target selection or binding."
+  },
+  "selection": {
+    "content_based_selection": false,
+    "question_level_content_inspected_before_binding": false,
+    "target_selected_by_predeclared_rule": true,
+    "planned_question_universe": "ALL mechanically eligible records in the bound file, subject only to preregistered fail-closed exclusions."
+  },
+  "isolation": {
+    "futureeval_cycle1_modified": false,
+    "futureeval_cycle1_branch": "scope-benchmark-design-v0.1",
+    "futureeval_administrative_freeze_commit": "448e4a107d5514e315d845ee95cd0cbb26594b9c",
+    "forecastbench_shadow_branch": "scope-forecastbench-shadow-v0.1"
+  },
+  "gates_after_binding": {
+    "gate_1_preregistration": "CLOSED",
+    "gate_2_target_binding": "CLOSED",
+    "gate_3_runner_integrity_validation": "OPEN",
+    "gate_4_explicit_real_run_authorization": "OPEN",
+    "question_content_retrieval_for_runner_development": false,
+    "real_model_execution_allowed": false
+  },
+  "authoritative_binding_time": "Git commit timestamp of this binding record"
+}
