@@ -53,6 +53,7 @@ BINDING_PATH = FORECASTBENCH_DIR / "scope_forecastbench_shadow01_target_binding.
 AUTH_PATH = FORECASTBENCH_DIR / "scope_forecastbench_shadow01_authorization.json"
 ADAPTER_PATH = FORECASTBENCH_DIR / "scope_forecastbench_adapter.py"
 RUNNER_PATH = Path(__file__).resolve()
+EXECUTION_WORKFLOW_PATH = ROOT / ".github" / "workflows" / "scope_forecastbench_shadow_run.yaml"
 OUTPUT_DIR = Path(
     os.environ.get("SCOPE_FB_OUTPUT_DIR", str(FORECASTBENCH_DIR / "run_output"))
 )
@@ -103,7 +104,7 @@ def validate_pre_network_gate() -> dict[str, Any]:
     require(binding["target"].get("file_size_bytes") == TARGET_SIZE_BYTES, "Wrong target size")
     require(binding["selection"].get("question_level_content_inspected_before_binding") is False, "Pre-binding inspection flag invalid")
 
-    # Gate 4 is deliberately checked before URL construction is ever used.
+    # Gate 4 is deliberately checked before target retrieval or model construction.
     require(auth.get("shadow_id") == SHADOW_ID, "Wrong authorization identity")
     require(auth.get("status") == "AUTHORIZED", "Gate 4 is closed: status is not AUTHORIZED")
     require(auth.get("authorized") is True, "Gate 4 is closed: authorized is false")
@@ -118,6 +119,7 @@ def validate_pre_network_gate() -> dict[str, Any]:
         BINDING_PATH: auth.get("binding_sha256"),
         ADAPTER_PATH: auth.get("adapter_sha256"),
         RUNNER_PATH: auth.get("runner_sha256"),
+        EXECUTION_WORKFLOW_PATH: auth.get("execution_workflow_sha256"),
     }
     for path, expected in expected_hashes.items():
         require(isinstance(expected, str) and len(expected) == 64, f"Missing authorized hash for {path.name}")
@@ -141,6 +143,7 @@ def validate_pre_network_gate() -> dict[str, Any]:
         "binding_sha256": sha256_file(BINDING_PATH),
         "adapter_sha256": sha256_file(ADAPTER_PATH),
         "runner_sha256": sha256_file(RUNNER_PATH),
+        "execution_workflow_sha256": sha256_file(EXECUTION_WORKFLOW_PATH),
     }
 
 
@@ -258,7 +261,7 @@ async def run() -> None:
                     "kind": "prediction",
                     **_prediction_record(prediction),
                 }
-            except Exception as exc:  # keep the paired ledger complete; never replace a failed target
+            except Exception as exc:  # keep paired ledger complete; never replace a failed target
                 result = {
                     "kind": "exception",
                     "exception_type": type(exc).__name__,
