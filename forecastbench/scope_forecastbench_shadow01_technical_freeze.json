@@ -1,0 +1,53 @@
+{
+  "schema_version": "0.1",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "TECHNICALLY_FROZEN_GATE4_CLOSED",
+  "runner_freeze_commit_sha": "a1764f72836890ea898d790cc575056a015da50e",
+  "validation": {
+    "workflow": "SCOPE ForecastBench Shadow Validation",
+    "run_id": 33396925308,
+    "job_id": 99503539810,
+    "conclusion": "success",
+    "check_count": 13,
+    "validation_record_sha256": "9dd4804e3bc9be84e569373a772f094a1e398695f37d1e2bbcc21372a6bedf3d",
+    "artifact_id": 9759695689,
+    "artifact_name": "scope-forecastbench-shadow-validation-33396925308-1",
+    "artifact_digest": "sha256:ec60fb378595b91e86cbb13134395a7c80f454dd0b3d5b9f005df1660896f976"
+  },
+  "frozen_file_sha256": {
+    "preregistration": "f546a9a0eae4a6709cf193abc3b9f4f4780fa252bb14843c90ab95b377e9d8ad",
+    "pre_retrieval_amendment": "7f6f2991c56a50ee3fca17915afba84f63cd9ebefd1631c03a8a8057bfed43b9",
+    "target_binding": "1a64702f365c4fd6f0c6dc4e0babaf7d8ea1b106c60dbeb8b7ffc921868e9c05",
+    "adapter": "750f25ee823ba466a47b9a218ac0df87a8fca2619c558f4a76896ea8d85e88db",
+    "adapter_validation": "a316e5bc17c6c9a20bee060a5f2f784bb0069e7be832b751f4e22966eb653066",
+    "runner": "9e70a95d1dbcdfef2af3cf5eec14decccb4a3afeef468824cc19b918cd494ff3",
+    "gate_validation": "d092f3cfd0b1136a3def20ace773657872843be1ca14af5b1955af49174235f5",
+    "frozen_scope_treatment": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f",
+    "frozen_control": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807"
+  },
+  "bound_target": {
+    "repository": "forecastingresearch/forecastbench-datasets",
+    "path": "datasets/question_sets/2026-08-30-llm.json",
+    "publication_commit_sha": "eefea7424aafb1329140b8916a8f49b62cc04744",
+    "publication_timestamp_utc": "2026-08-30T00:12:30Z",
+    "git_blob_sha": "dd1d18715edd28102e04bc0a2ae22462120dbfb4",
+    "file_size_bytes": 1312712
+  },
+  "selection": {
+    "maximum_pairs": 200,
+    "market_quota": 100,
+    "dataset_quota": 100,
+    "dataset_horizon_rule": "earliest listed resolution_date strictly after forecast_due_date",
+    "deterministic_seed": 640064,
+    "content_based_selection": false
+  },
+  "state_at_freeze": {
+    "target_content_accessed": false,
+    "target_question_content_inspected": false,
+    "real_model_execution": false,
+    "gate4_authorized": false,
+    "authorization_status": "NOT_AUTHORIZED",
+    "futureeval_cycle1_modified": false
+  },
+  "next_permitted_step": "Separate explicit user authorization for exactly one Shadow-01 run. Only after that authorization may the runner retrieve the pinned target content and construct models."
+}
