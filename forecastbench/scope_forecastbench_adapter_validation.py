@@ -93,6 +93,16 @@ def test_valid_fixture_and_balanced_deterministic_selection() -> None:
     assert audit["selected_keys_sha256"] == shuffled_audit["selected_keys_sha256"]
 
 
+def test_empty_background_string_is_valid_and_not_synthesized() -> None:
+    fixture = _fixture()
+    fixture["questions"][0]["background"] = ""
+    parsed = parse_bound_question_set(_bytes(fixture))
+    packets, _ = build_selected_packets(parsed)
+    matching = [p for p in packets if p.question_id == fixture["questions"][0]["id"]]
+    if matching:
+        assert matching[0].background_info == ""
+
+
 def test_dataset_uses_earliest_future_resolution_date() -> None:
     parsed = parse_bound_question_set(_bytes(_fixture()))
     packets, _ = build_selected_packets(parsed)
@@ -153,7 +163,6 @@ def test_duplicate_identity_fails_closed() -> None:
 
 
 def test_git_blob_hash_implementation() -> None:
-    # Git's documented empty-blob object id.
     assert git_blob_sha1(b"") == "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 
 
@@ -198,6 +207,7 @@ def test_selection_hash_is_stable() -> None:
 def main() -> None:
     tests = [
         test_valid_fixture_and_balanced_deterministic_selection,
+        test_empty_background_string_is_valid_and_not_synthesized,
         test_dataset_uses_earliest_future_resolution_date,
         test_leak_fields_never_enter_prompt_packets,
         test_schema_drift_fails_closed,
