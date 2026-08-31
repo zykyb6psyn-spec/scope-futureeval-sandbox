@@ -45,7 +45,6 @@ TEXT_REQUIRED_FIELDS = (
     "source",
     "question",
     "resolution_criteria",
-    "background",
 )
 
 
@@ -147,6 +146,14 @@ def _validate_question_row(row: Any, index: int) -> None:
             raise ForecastBenchAdapterError(
                 f"Question row {index} has invalid required field {field}"
             )
+
+    # ForecastBench's official QuestionFrame requires background to be a string,
+    # but does not require it to be non-empty. Preserve an empty string exactly
+    # rather than rejecting or synthesizing content.
+    if not isinstance(row["background"], str):
+        raise ForecastBenchAdapterError(
+            f"Question row {index} has non-string background"
+        )
 
     source = row["source"]
     if source not in ALL_SOURCES:
