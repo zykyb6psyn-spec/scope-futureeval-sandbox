@@ -1,0 +1,15 @@
+{
+  "schema_version": "0.1",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "NOT_AUTHORIZED",
+  "authorized": false,
+  "authorization_scope": null,
+  "runner_freeze_commit_sha": null,
+  "preregistration_sha256": null,
+  "amendment_sha256": null,
+  "binding_sha256": null,
+  "adapter_sha256": null,
+  "runner_sha256": null,
+  "authorized_at_utc": null,
+  "explicit_user_authorization_recorded": false
+}
