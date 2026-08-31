@@ -12,6 +12,7 @@ import scope_forecastbench_shadow_runner as runner
 
 ROOT = Path(__file__).resolve().parents[1]
 FB = Path(__file__).resolve().parent
+EXECUTION_WORKFLOW = ROOT / ".github" / "workflows" / "scope_forecastbench_shadow_run.yaml"
 OUTPUT_DIR = FB / "validation_output"
 OUTPUT_DIR.mkdir(exist_ok=True)
 
@@ -40,7 +41,6 @@ def main() -> None:
         py_compile.compile(str(FB / name), doraise=True)
         checks.append(f"syntax:{name}")
 
-    # Synthetic-only adapter tests. These do not load the bound target file.
     adapter_validation.main()
     checks.append("synthetic_adapter_validation:PASS")
 
@@ -48,10 +48,9 @@ def main() -> None:
     require(auth["status"] == "NOT_AUTHORIZED", "Authorization gate must remain closed")
     require(auth["authorized"] is False, "Authorization boolean must remain false")
     require(auth["explicit_user_authorization_recorded"] is False, "No authorization may be pre-recorded")
+    require(auth.get("execution_workflow_sha256") is None, "Closed gate must not pre-authorize workflow hash")
     checks.append("gate4_record:CLOSED")
 
-    # prove fail-closed behavior. This call must stop before OPENROUTER key check,
-    # target retrieval, or model construction because Gate 4 is still closed.
     old_key = os.environ.pop("OPENROUTER_API_KEY", None)
     try:
         try:
@@ -73,8 +72,23 @@ def main() -> None:
     require("raw.githubusercontent.com" in source, "Pinned target URL missing")
     require(runner.TARGET_PUBLICATION_COMMIT in source, "Pinned publication commit missing")
     require("/main/datasets/question_sets/2026-08-30-llm.json" not in source, "Unpinned main target prohibited")
+    require("execution_workflow_sha256" in source, "Runner must gate on workflow hash")
     checks.append("runner_order:PRE_NETWORK_GATE_FIRST")
     checks.append("target_url:PINNED_COMMIT")
+    checks.append("runner_integrity:EXECUTION_WORKFLOW_HASH_GATED")
+
+    workflow = EXECUTION_WORKFLOW.read_text(encoding="utf-8")
+    require("workflow_dispatch:" in workflow, "Execution workflow must be manual-only")
+    require("push:" not in workflow, "Execution workflow must not run on push")
+    require("permissions:\n  contents: read" in workflow, "Execution workflow permissions must be read-only")
+    require("persist-credentials: false" in workflow, "Checkout credentials must not persist")
+    require("python-version: '3.11.16'" in workflow, "Python version must be pinned")
+    require("version: '2.4.2'" in workflow, "Poetry version must be pinned")
+    require("poetry sync --no-interaction --no-root" in workflow, "Locked dependency sync required")
+    require("OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}" in workflow, "Only approved model secret wiring missing")
+    require("poetry run python forecastbench/scope_forecastbench_shadow_runner.py" in workflow, "Runner invocation mismatch")
+    require("METACULUS_TOKEN" not in workflow, "Metaculus token is not required for this shadow")
+    checks.append("execution_workflow:MANUAL_PINNED_READ_ONLY")
 
     prereg = json.loads((FB / "scope_forecastbench_shadow01_preregistration.json").read_text())
     amendment = json.loads(
@@ -109,11 +123,12 @@ def main() -> None:
         "adapter_validation": FB / "scope_forecastbench_adapter_validation.py",
         "runner": FB / "scope_forecastbench_shadow_runner.py",
         "gate_validation": FB / "scope_forecastbench_gate_validation.py",
+        "execution_workflow": EXECUTION_WORKFLOW,
         "frozen_scope": ROOT / "benchmark" / "scope_structured_bot.py",
         "frozen_control": ROOT / "main.py",
     }
     record = {
-        "schema_version": "0.1",
+        "schema_version": "0.2",
         "shadow_id": "SCOPE-FB-SHADOW-01",
         "status": "READY_FOR_RUNNER_FREEZE_GATE4_CLOSED",
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
