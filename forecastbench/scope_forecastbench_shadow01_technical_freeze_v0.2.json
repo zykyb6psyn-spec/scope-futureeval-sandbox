@@ -1,0 +1,67 @@
+{
+  "schema_version": "0.2",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "TECHNICALLY_FROZEN_GATE4_CLOSED",
+  "supersedes_technical_freeze": "scope_forecastbench_shadow01_technical_freeze.json",
+  "runner_freeze_commit_sha": "5e2ce882e436b8c35491786d2ba3beb8750a29cb",
+  "validation": {
+    "workflow": "SCOPE ForecastBench Shadow Validation",
+    "run_id": 33397465684,
+    "job_id": 99505333249,
+    "conclusion": "success",
+    "check_count": 15,
+    "validation_record_sha256": "b702186a87782e3037fac31de3447a6c51f5a7ad32cd332a214248ed156c80f7",
+    "artifact_id": 9759903986,
+    "artifact_name": "scope-forecastbench-shadow-validation-33397465684-1",
+    "artifact_digest": "sha256:da692eda69af7b63d1ab16aa6f193381fcb673517d6f70ab591c38c978a98d18"
+  },
+  "frozen_file_sha256": {
+    "preregistration": "f546a9a0eae4a6709cf193abc3b9f4f4780fa252bb14843c90ab95b377e9d8ad",
+    "pre_retrieval_amendment": "7f6f2991c56a50ee3fca17915afba84f63cd9ebefd1631c03a8a8057bfed43b9",
+    "target_binding": "1a64702f365c4fd6f0c6dc4e0babaf7d8ea1b106c60dbeb8b7ffc921868e9c05",
+    "adapter": "750f25ee823ba466a47b9a218ac0df87a8fca2619c558f4a76896ea8d85e88db",
+    "adapter_validation": "a316e5bc17c6c9a20bee060a5f2f784bb0069e7be832b751f4e22966eb653066",
+    "runner": "86ebf20506cde137c60fb4fc964e540dbe0b13cc6211caa9c88814c29cfb6a81",
+    "execution_workflow": "7ce32de17d72bc5b3f458ca95ff2d4b8fd5b6e33a1e851eb52a8f4fdd1be3eff",
+    "gate_validation": "0b10d74fbcecd024252a0866647486af83f78fe9876899479beda5984e020739",
+    "frozen_scope_treatment": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f",
+    "frozen_control": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807"
+  },
+  "execution_workflow": {
+    "path": ".github/workflows/scope_forecastbench_shadow_run.yaml",
+    "trigger": "workflow_dispatch_only",
+    "permissions": "contents_read",
+    "checkout_persist_credentials": false,
+    "python": "3.11.16",
+    "poetry": "2.4.2",
+    "locked_dependencies": true,
+    "timeout_minutes": 240,
+    "required_secret": "OPENROUTER_API_KEY",
+    "metaculus_token_required": false
+  },
+  "bound_target": {
+    "repository": "forecastingresearch/forecastbench-datasets",
+    "path": "datasets/question_sets/2026-08-30-llm.json",
+    "publication_commit_sha": "eefea7424aafb1329140b8916a8f49b62cc04744",
+    "publication_timestamp_utc": "2026-08-30T00:12:30Z",
+    "git_blob_sha": "dd1d18715edd28102e04bc0a2ae22462120dbfb4",
+    "file_size_bytes": 1312712
+  },
+  "selection": {
+    "maximum_pairs": 200,
+    "market_quota": 100,
+    "dataset_quota": 100,
+    "dataset_horizon_rule": "earliest listed resolution_date strictly after forecast_due_date",
+    "deterministic_seed": 640064,
+    "content_based_selection": false
+  },
+  "state_at_freeze": {
+    "target_content_accessed": false,
+    "target_question_content_inspected": false,
+    "real_model_execution": false,
+    "gate4_authorized": false,
+    "authorization_status": "NOT_AUTHORIZED",
+    "futureeval_cycle1_modified": false
+  },
+  "next_permitted_step": "Separate explicit user authorization for exactly one Shadow-01 run. Only after authorization may the pinned target content be retrieved and models be constructed."
+}
