@@ -1,0 +1,31 @@
+{
+  "schema_version": "0.1",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "attempt": 1,
+  "status": "FAILED_CLOSED_BEFORE_FORECAST_EXECUTION",
+  "github_run_id": 33402834111,
+  "github_job_id": 99523081809,
+  "run_head_sha": "677f147625d12fcfb31c02b7c44d2cd967ba4410",
+  "started_at_utc": "2026-08-31T14:28:26Z",
+  "failed_at_utc": "2026-08-31T14:29:16Z",
+  "failure_stage": "BOUND_TARGET_SCHEMA_VALIDATION",
+  "failure_class": "ADAPTER_TOO_STRICT_FOR_OFFICIAL_SCHEMA",
+  "error_summary": "ForecastBench adapter rejected an empty background string because it required non-empty text. The official ForecastBench QuestionFrame requires background to be a string but does not impose a non-empty constraint.",
+  "execution_evidence": {
+    "target_bytes_downloaded_by_runner": true,
+    "target_git_blob_verified": true,
+    "question_set_parsing_started": true,
+    "failure_observed_at_row_index": 3,
+    "question_content_manually_inspected": false,
+    "content_based_selection_performed": false,
+    "selection_completed": false,
+    "prompt_packet_construction_completed": false,
+    "model_construction_reached": false,
+    "forecast_model_calls": 0,
+    "forecasts_produced": 0,
+    "outcomes_accessed": false,
+    "run_output_artifact_produced": false
+  },
+  "methodological_disposition": "Technical compatibility failure only. No forecast result exists and no predictive inference may be drawn. Fix is restricted to aligning background validation with the official public ForecastBench schema. A new technical validation/freeze and separate Gate-4 authorization are required before another real attempt.",
+  "futureeval_cycle1_modified": false
+}
