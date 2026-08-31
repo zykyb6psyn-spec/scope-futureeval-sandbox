@@ -1,0 +1,49 @@
+{
+  "schema_version": "0.2",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "PREREGISTERED_PRE_RETRIEVAL_AMENDMENT",
+  "supersedes_only": [
+    "target.selection",
+    "statistics.cluster_rule"
+  ],
+  "does_not_change": [
+    "paired treatment/control definitions",
+    "frozen SCOPE and control prompt/code identities",
+    "model routes and generation settings",
+    "information prohibition policy",
+    "primary and secondary scoring estimands",
+    "outcome source",
+    "no-writeback isolation from FutureEval Cycle 1, AKT and XVG"
+  ],
+  "reason_for_pre_retrieval_amendment": "ForecastBench dataset questions can carry multiple resolution dates. Reusing the frozen Cycle-1 single-probability treatment/control exactly would otherwise expand one dataset question into many correlated model calls and overweight dataset questions relative to market questions. A fixed balanced sample also bounds compute while preserving a useful paired external shadow test. This amendment is committed before any bound 2026-08-30 question content is retrieved or inspected.",
+  "selection": {
+    "target_forecast_pairs": 200,
+    "market_target_pairs": 100,
+    "dataset_target_pairs": 100,
+    "seed": 640064,
+    "market_candidate_definition": "One binary forecast target per mechanically recognized ForecastBench market-source question.",
+    "dataset_candidate_definition": "One binary forecast target per mechanically recognized ForecastBench dataset-source question, using that question's earliest listed resolution_date strictly after the official forecast_due_date.",
+    "ranking_rule": "Within each source type, rank candidates ascending by SHA256('640064|<source>|<id>|<resolution_date_or_MARKET>') and take the first 100 unique question IDs. No question text, background, URL, topic, difficulty, forecast value, market value, outcome or current information may affect selection.",
+    "duplicate_question_ids_within_arm": false,
+    "if_fewer_than_100_candidates_in_a_source_type": "Use all mechanically eligible unique candidates from that source type and do not backfill from the other source type.",
+    "content_based_selection": false,
+    "question_level_content_inspected_before_this_amendment": false,
+    "all_mechanical_exclusions_and_candidate_counts_must_be_logged": true
+  },
+  "statistics": {
+    "cluster_rule": "Primary cluster is immutable <source>|<id>. Because at most one target per question is selected, each selected pair is one question cluster unless duplicate native event dependence can be identified from non-content metadata by a separately preregistered rule before outcomes are accessed.",
+    "minimum_resolved_pairs_for_directional_classification": 30,
+    "minimum_independent_clusters_for_directional_classification": 20,
+    "single_shadow_run_cannot_establish_general_superiority": true
+  },
+  "compute_guardrail": {
+    "reasoning_calls_per_arm_per_selected_target": 1,
+    "parser_calls_per_arm_per_selected_target": 1,
+    "maximum_selected_targets_if_full_quota_available": 200,
+    "maximum_reasoning_calls_both_arms": 400,
+    "maximum_parser_calls_both_arms": 400,
+    "no_retries_beyond_frozen_allowed_tries": true,
+    "no_replacement_of_failed_targets": true
+  },
+  "authoritative_amendment_time": "Git commit timestamp of this amendment"
+}
