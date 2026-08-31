@@ -1,0 +1,139 @@
+{
+  "schema_version": "0.1",
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "PREREGISTERED_PRE_RETRIEVAL",
+  "official_forecastbench_submission": false,
+  "purpose": "Independent supplementary prospective shadow evaluation of whether frozen SCOPE structured reasoning adds probabilistic forecasting value over a matched control on an externally generated ForecastBench question set.",
+  "interpretation_guardrail": "This is not an official ForecastBench submission because forecasts occur after the official 2026-08-30 submission window. Results must not be represented as official leaderboard performance or as contamination-free evidence equivalent to an on-time submission.",
+  "isolation": {
+    "futureeval_cycle1_branch": "scope-benchmark-design-v0.1",
+    "futureeval_administrative_freeze_commit": "448e4a107d5514e315d845ee95cd0cbb26594b9c",
+    "futureeval_frozen_evaluation_commit": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+    "futureeval_cycle1_must_remain_unchanged": true,
+    "writeback_to_futureeval_cycle1": false,
+    "writeback_to_akt_or_xvg": false,
+    "method_changes_from_shadow_results_allowed_before_resolution": false
+  },
+  "target": {
+    "provider": "Forecasting Research Institute / ForecastBench",
+    "repository": "forecastingresearch/forecastbench-datasets",
+    "target_rule": "Use the official LLM question set associated with the 2026-08-30 ForecastBench round. Bind by immutable repository path/blob identity after preregistration and before any question-level inspection.",
+    "expected_path": "datasets/question_sets/2026-08-30-llm.json",
+    "fallback_binding_rule": "If the dated path is absent, bind only to the immutable latest-llm snapshot whose cycle-level metadata establishes forecast_due_date=2026-08-30; do not inspect question text to choose a target.",
+    "observed_public_dataset_repo_commit_before_preregistration": "cc3f6460b528f4d483699a96edeecdd4a70d112c",
+    "question_level_content_inspected_before_preregistration": false,
+    "selection": "ALL mechanically eligible questions in the bound official question set; no content-based selection, cherry-picking, topic filtering, difficulty filtering, or outcome-based exclusion.",
+    "mechanical_exclusions": [
+      "invalid or unparsable record",
+      "missing immutable question identifier",
+      "missing forecast target/probability semantics",
+      "already resolved at shadow forecast timestamp if this can be established from target metadata without using resolution values",
+      "record that cannot be sanitized without ambiguity"
+    ],
+    "all_exclusions_must_be_logged": true
+  },
+  "information_policy": {
+    "external_research": false,
+    "web_browsing": false,
+    "crowd_forecast": false,
+    "leaderboard_information": false,
+    "question_fixed_effects": false,
+    "resolution_values": false,
+    "resolution_sets": false,
+    "post_due_date_market_data": false,
+    "cross_arm_visibility": false,
+    "allowed_input": "Only the immutable forecasting question snapshot and static metadata required to interpret the forecast target, as contained in the bound question set and sanitized identically for both arms.",
+    "prohibited_input_rule": "Any field containing realized outcomes, later updates, current forecasts, current market prices, crowd probabilities, leaderboard results, fixed effects, scoring outputs, or post-due-date information is removed before either arm receives the record.",
+    "sanitizer_must_fail_closed": true
+  },
+  "paired_arms": {
+    "scope": {
+      "description": "Frozen SCOPE structured reasoning treatment",
+      "code_commit": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+      "scope_prompt_code_sha256": "07414101681fc90a78d7e9045c337765b80db809a5fea9fdefe44320ad67620f"
+    },
+    "control": {
+      "description": "Matched standard control using the same underlying model and sanitized input",
+      "code_commit": "1571ba3af0cf941bcd66708a2b3bbba1411d26b8",
+      "control_prompt_code_sha256": "c32057f1d08f34f7231ee3aa90695982048b7695b5bc22af29898206e6c2e807"
+    },
+    "reasoning_model_route": "openrouter/openai/gpt-4o",
+    "parser_model_route": "openrouter/openai/gpt-4o-mini",
+    "temperature": 0.3,
+    "timeout_seconds": 40,
+    "allowed_tries": 2,
+    "research_reports_per_question": 1,
+    "predictions_per_research_report": 1,
+    "arm_execution_order_seed": 640064,
+    "matched_compute_policy": "Same call structure, model routes, parser, retries, timeout and generation settings; prompt length may differ because structured reasoning is the treatment.",
+    "publish_forecasts": false
+  },
+  "scoring": {
+    "primary_internal_estimand": "mean paired Brier advantage = mean(Brier_CONTROL - Brier_SCOPE); positive values favor SCOPE",
+    "secondary_estimand": "mean log-score delta = mean(ln P_SCOPE(realized) - ln P_CONTROL(realized)); positive values favor SCOPE",
+    "additional_diagnostics": [
+      "Brier score by arm",
+      "log score by arm",
+      "calibration/reliability where sample size supports it",
+      "discrimination/AUC where meaningful",
+      "accuracy only as a descriptive classification metric",
+      "catastrophic overconfidence / tail-loss frequency",
+      "market versus dataset question performance"
+    ],
+    "official_forecastbench_metric": "difficulty-adjusted Brier score / Brier Index may be reported only if computed under ForecastBench methodology with appropriate external data; it is not the primary paired causal estimand for this late shadow run.",
+    "rare_event_guardrail": "Do not rely on Brier alone for low-base-rate outcomes; retain log-score and calibration diagnostics.",
+    "outcome_source": "Official ForecastBench resolution data only, retrieved after forecasts are irreversibly frozen."
+  },
+  "statistics": {
+    "paired_analysis": true,
+    "bootstrap_seed": 640064,
+    "bootstrap_iterations": 10000,
+    "cluster_rule": "Use immutable native event/source grouping when available without content judgment; otherwise question_id. Any dependence adjustment must be specified before seeing outcomes.",
+    "minimum_resolved_pairs_for_directional_classification": 30,
+    "minimum_independent_clusters_for_directional_classification": 20,
+    "no_early_stopping_based_on_performance": true,
+    "checkpoints": [
+      "official round due date + 7 days: descriptive rapid-resolution checkpoint only",
+      "official round due date + 30 days",
+      "shadow forecast timestamp + 50 days: stability-oriented checkpoint",
+      "official round due date + 90 days",
+      "official round due date + 180 days"
+    ],
+    "single_checkpoint_cannot_establish_general_superiority": true
+  },
+  "execution_gates": {
+    "gate_1_preregistration": "CLOSED_BY_THIS_RECORD_ONCE_COMMITTED",
+    "gate_2_target_binding": "OPEN",
+    "gate_3_runner_integrity_validation": "OPEN",
+    "gate_4_explicit_real_run_authorization": "OPEN",
+    "real_question_retrieval_allowed_before_gate_2": false,
+    "real_model_execution_allowed": false
+  },
+  "provenance": {
+    "authoritative_preregistration_time": "Git commit timestamp of the final preregistration freeze commit",
+    "question_set_binding_must_record": [
+      "repository commit SHA",
+      "path",
+      "git blob SHA or cryptographic file hash",
+      "binding timestamp UTC",
+      "confirmation that no question-level inspection preceded binding"
+    ],
+    "forecast_execution_must_record": [
+      "execution commit SHA",
+      "runtime manifest",
+      "model routes",
+      "sanitizer hash",
+      "question-set binding hash",
+      "start/end timestamps UTC",
+      "paired ledger hash chain",
+      "all exclusions/failures"
+    ]
+  },
+  "limitations_declared_ex_ante": [
+    "Forecasts are late relative to the official 2026-08-30 deadline and therefore are not directly leaderboard-comparable.",
+    "The OpenRouter model alias is service-level nondeterministic and may change without a bitwise-pinned model revision.",
+    "A post-deadline run has unavoidable temporal-contamination risk even with external research disabled; this must be disclosed in every interpretation.",
+    "ForecastBench and FutureEval test overlapping but non-identical constructs; cross-benchmark results must not be pooled naively.",
+    "No single ForecastBench shadow round is sufficient evidence of general predictive superiority."
+  ]
+}
