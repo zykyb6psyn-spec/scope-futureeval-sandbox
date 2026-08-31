@@ -3,7 +3,7 @@
   "shadow_id": "SCOPE-FB-SHADOW-01",
   "status": "AUTHORIZED",
   "authorized": true,
-  "authorization_scope": "ONE_SHADOW_RUN_BOUND_2026-08-30_ATTEMPT2_V0.3",
+  "authorization_scope": "ONE_SHADOW_RUN_BOUND_2026-08-30",
   "runner_freeze_commit_sha": "9c57756e4cbcd4cefb1dc1b94fed9dd2fc78bd28",
   "preregistration_sha256": "f546a9a0eae4a6709cf193abc3b9f4f4780fa252bb14843c90ab95b377e9d8ad",
   "amendment_sha256": "7f6f2991c56a50ee3fca17915afba84f63cd9ebefd1631c03a8a8057bfed43b9",
