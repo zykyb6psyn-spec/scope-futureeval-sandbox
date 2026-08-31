@@ -1,5 +1,5 @@
 {
-  "schema_version": "0.1",
+  "schema_version": "0.2",
   "shadow_id": "SCOPE-FB-SHADOW-01",
   "status": "NOT_AUTHORIZED",
   "authorized": false,
@@ -10,6 +10,7 @@
   "binding_sha256": null,
   "adapter_sha256": null,
   "runner_sha256": null,
+  "execution_workflow_sha256": null,
   "authorized_at_utc": null,
   "explicit_user_authorization_recorded": false
 }
