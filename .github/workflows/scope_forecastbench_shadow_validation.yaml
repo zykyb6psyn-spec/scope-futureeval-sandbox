@@ -1,0 +1,67 @@
+name: SCOPE ForecastBench Shadow Validation
+
+on:
+  push:
+    branches:
+      - scope-forecastbench-shadow-v0.1
+    paths:
+      - 'forecastbench/**'
+      - 'benchmark/scope_structured_bot.py'
+      - 'main.py'
+      - '.github/workflows/scope_forecastbench_shadow_validation.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONHASHSEED: '0'
+  TZ: UTC
+
+jobs:
+  validate_shadow_gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11.16'
+          check-latest: false
+
+      - name: Install Poetry
+        uses: snok/install-poetry@a783c322200f0519c7926aa6faa857c4e23e9263
+        with:
+          version: '2.4.2'
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install locked dependencies
+        run: poetry sync --no-interaction --no-root
+
+      - name: Syntax preflight
+        run: |
+          poetry run python -m py_compile \
+            forecastbench/scope_forecastbench_adapter.py \
+            forecastbench/scope_forecastbench_adapter_validation.py \
+            forecastbench/scope_forecastbench_shadow_runner.py \
+            forecastbench/scope_forecastbench_gate_validation.py
+
+      - name: Run offline preregistration, leakage and fail-closed validation
+        env:
+          PYTHONPATH: .:benchmark:forecastbench
+        run: poetry run python forecastbench/scope_forecastbench_gate_validation.py
+
+      - name: Preserve Shadow-01 validation record
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scope-forecastbench-shadow-validation-${{ github.run_id }}-${{ github.run_attempt }}
+          path: forecastbench/validation_output/
+          if-no-files-found: warn
+          retention-days: 90
