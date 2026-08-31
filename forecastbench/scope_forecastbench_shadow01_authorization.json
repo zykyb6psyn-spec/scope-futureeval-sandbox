@@ -1,16 +1,16 @@
 {
   "schema_version": "0.2",
   "shadow_id": "SCOPE-FB-SHADOW-01",
-  "status": "NOT_AUTHORIZED",
-  "authorized": false,
-  "authorization_scope": null,
-  "runner_freeze_commit_sha": null,
-  "preregistration_sha256": null,
-  "amendment_sha256": null,
-  "binding_sha256": null,
-  "adapter_sha256": null,
-  "runner_sha256": null,
-  "execution_workflow_sha256": null,
-  "authorized_at_utc": null,
-  "explicit_user_authorization_recorded": false
+  "status": "AUTHORIZED",
+  "authorized": true,
+  "authorization_scope": "ONE_SHADOW_RUN_BOUND_2026-08-30",
+  "runner_freeze_commit_sha": "5e2ce882e436b8c35491786d2ba3beb8750a29cb",
+  "preregistration_sha256": "f546a9a0eae4a6709cf193abc3b9f4f4780fa252bb14843c90ab95b377e9d8ad",
+  "amendment_sha256": "7f6f2991c56a50ee3fca17915afba84f63cd9ebefd1631c03a8a8057bfed43b9",
+  "binding_sha256": "1a64702f365c4fd6f0c6dc4e0babaf7d8ea1b106c60dbeb8b7ffc921868e9c05",
+  "adapter_sha256": "750f25ee823ba466a47b9a218ac0df87a8fca2619c558f4a76896ea8d85e88db",
+  "runner_sha256": "86ebf20506cde137c60fb4fc964e540dbe0b13cc6211caa9c88814c29cfb6a81",
+  "execution_workflow_sha256": "7ce32de17d72bc5b3f458ca95ff2d4b8fd5b6e33a1e851eb52a8f4fdd1be3eff",
+  "authorized_at_utc": "2026-08-31T14:00:45Z",
+  "explicit_user_authorization_recorded": true
 }
