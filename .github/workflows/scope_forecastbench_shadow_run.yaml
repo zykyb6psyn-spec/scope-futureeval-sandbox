@@ -1,0 +1,60 @@
+name: SCOPE ForecastBench Shadow-01 Run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PYTHONHASHSEED: '0'
+  TZ: UTC
+
+jobs:
+  run_shadow01:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
+        with:
+          python-version: '3.11.16'
+          check-latest: false
+
+      - name: Install Poetry
+        uses: snok/install-poetry@a783c322200f0519c7926aa6faa857c4e23e9263
+        with:
+          version: '2.4.2'
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Install locked dependencies
+        run: poetry sync --no-interaction --no-root
+
+      - name: Preflight syntax only
+        run: |
+          poetry run python -m py_compile \
+            forecastbench/scope_forecastbench_adapter.py \
+            forecastbench/scope_forecastbench_shadow_runner.py \
+            benchmark/scope_structured_bot.py \
+            main.py
+
+      - name: Execute authorization-gated paired shadow run
+        env:
+          PYTHONPATH: .:benchmark:forecastbench
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+        run: poetry run python forecastbench/scope_forecastbench_shadow_runner.py
+
+      - name: Preserve immutable run output
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: scope-forecastbench-shadow01-run-${{ github.run_id }}-${{ github.run_attempt }}
+          path: forecastbench/run_output/
+          if-no-files-found: warn
+          retention-days: 90
