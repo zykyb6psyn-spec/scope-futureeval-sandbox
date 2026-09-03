@@ -1,0 +1,78 @@
+{
+  "analysis_population": {
+    "first_formal_directional_analysis_min_independent_clusters": 20,
+    "first_formal_directional_analysis_min_resolved_pairs": 30,
+    "if_a_larger_resolution_tranche_is_available_at_first_analysis": "Use the full then-available frozen-pair tranche rather than stopping at 30.",
+    "no_early_stopping_based_on_performance": true,
+    "no_optional_pair_exclusion": true,
+    "paired_design": true,
+    "target_pair_count_frozen": 200
+  },
+  "authoritative_preregistration": {
+    "artifact_name": "scope-forecastbench-shadow01-run-33404568474-1",
+    "artifact_sha256": "2c2a196ca8292b121750fbfb3e87909f1e9815e5695ca6ee2bce5358178f4dc7",
+    "git_blob_sha": "dfe82267df001b7357803fa43b11c4f13eed5474",
+    "path": "forecastbench/scope_forecastbench_shadow01_preregistration.json",
+    "run_head_sha": "69dd8343c11e8c76bbb94c686363d99e60ec2383",
+    "run_id": 33404568474
+  },
+  "failure_handling": {
+    "generation_failures_never_silently_removed": true,
+    "interpretation": "Any material asymmetric failure pattern is reported as an operational caveat and cannot be hidden by reporting only successful pairs.",
+    "no_imputation_or_rerun": true,
+    "report_failure_affected_resolved_n": true,
+    "report_failures_by_arm": true,
+    "report_resolved_total": true,
+    "report_score_eligible_paired_n": true,
+    "score_eligible_pair_rule": "Both frozen arm predictions must exist and the official outcome must be resolvable under the frozen dataset semantics."
+  },
+  "frozen_at_utc": "2026-09-03T05:41:48Z",
+  "methodological_effect": "None. Does not alter forecasts, pair selection, model outputs, runner, probabilities, target binding, or frozen question snapshots.",
+  "outcome_source": {
+    "freeze_before_access": true,
+    "no_question_or_outcome_selection_after_result_inspection": true,
+    "not_due_before": "2026-09-06",
+    "rule": "Official ForecastBench resolution/output data only."
+  },
+  "primary_metric": {
+    "definition": "mean((p_control-y)^2 - (p_scope-y)^2) over score-eligible resolved pairs; positive favors SCOPE",
+    "name": "paired_brier_advantage",
+    "report_arm_means": true
+  },
+  "purpose": "Freeze the outcome/scoring interpretation path for the already-frozen ForecastBench Shadow-01 forecasts before any formal outcome interpretation.",
+  "reporting_guardrails": {
+    "no_metric_shopping_after_outcome_access": true,
+    "report_exact_resolved_n_and_failure_denominators": true,
+    "report_uncertainty": true,
+    "required_label": "Late prospective shadow; not an official ForecastBench submission and not leaderboard-equivalent.",
+    "separate_observed_metrics_inference_and_speculation": true,
+    "single_tranche_not_general_superiority": true
+  },
+  "schema_version": "0.1",
+  "secondary_metrics": {
+    "calibration": "Report only where sample size supports it; descriptive for the first tranche.",
+    "paired_log_score_delta": {
+      "definition": "mean(log P_scope(realized) - log P_control(realized)) over score-eligible resolved pairs; positive favors SCOPE",
+      "numerical_floor": 1e-15,
+      "rule": "Floor is computational only; retain and disclose original probability including exact 0/1."
+    },
+    "tail_risk": [
+      "worst paired Brier disadvantage",
+      "worst paired log-score delta where defined",
+      "frequency of extreme overconfidence / near-zero realized-outcome probability",
+      "distributional diagnostics by source_type when sample size supports it"
+    ],
+    "win_tie_loss": {
+      "basis": "per-pair Brier score",
+      "tie_tolerance_absolute": 1e-12
+    }
+  },
+  "separation": {
+    "akt_unchanged": true,
+    "futureeval_cycle1_unchanged": true,
+    "innovation_quarantine_for_method_changes": true,
+    "xvg_unchanged": true
+  },
+  "shadow_id": "SCOPE-FB-SHADOW-01",
+  "status": "FROZEN_PRE_OUTCOME_INTERPRETATION"
+}
