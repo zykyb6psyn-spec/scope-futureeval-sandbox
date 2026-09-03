@@ -44,25 +44,49 @@ def main() -> None:
     adapter_validation.main()
     checks.append("synthetic_adapter_validation:PASS")
 
+    # Lifecycle-aware authorization validation.
+    # Shadow-01 has already been explicitly authorized and executed. The validator must
+    # verify that the frozen one-run authorization record is internally consistent,
+    # not incorrectly require the historical pre-authorization CLOSED state.
     auth = json.loads((FB / "scope_forecastbench_shadow01_authorization.json").read_text())
-    require(auth["status"] == "NOT_AUTHORIZED", "Authorization gate must remain closed")
-    require(auth["authorized"] is False, "Authorization boolean must remain false")
-    require(auth["explicit_user_authorization_recorded"] is False, "No authorization may be pre-recorded")
-    require(auth.get("execution_workflow_sha256") is None, "Closed gate must not pre-authorize workflow hash")
-    checks.append("gate4_record:CLOSED")
+    require(auth["status"] == "AUTHORIZED", "Authorization record must remain AUTHORIZED")
+    require(auth["authorized"] is True, "Authorization boolean must remain true")
+    require(auth["explicit_user_authorization_recorded"] is True, "Explicit authorization record missing")
+    require(
+        auth.get("authorization_scope") == runner.AUTH_SCOPE,
+        "Authorization scope must remain the frozen one-shadow-run scope",
+    )
+    require(
+        isinstance(auth.get("execution_workflow_sha256"), str)
+        and len(auth["execution_workflow_sha256"]) == 64,
+        "Authorized execution workflow hash missing",
+    )
+    require(
+        isinstance(auth.get("runner_freeze_commit_sha"), str)
+        and len(auth["runner_freeze_commit_sha"]) == 40,
+        "Authorized runner freeze commit missing",
+    )
+    checks.append("gate4_record:AUTHORIZED_FROZEN_ONE_RUN")
 
-    old_key = os.environ.pop("OPENROUTER_API_KEY", None)
+    # Validate the pre-network administrative/integrity gate offline. Supplying a
+    # non-secret sentinel satisfies only the presence check; validate_pre_network_gate
+    # performs no network access and no model execution.
+    old_key = os.environ.get("OPENROUTER_API_KEY")
+    os.environ["OPENROUTER_API_KEY"] = "offline-validation-sentinel"
     try:
-        try:
-            runner.validate_pre_network_gate()
-        except RuntimeError as exc:
-            require("Gate 4 is closed" in str(exc), f"Unexpected gate failure: {exc}")
-        else:
-            raise AssertionError("Runner unexpectedly passed closed Gate 4")
+        gate = runner.validate_pre_network_gate()
+        require(
+            gate.get("runner_freeze_commit_sha") == auth.get("runner_freeze_commit_sha"),
+            "Runner gate did not bind to the frozen authorized commit",
+        )
     finally:
-        if old_key is not None:
+        if old_key is None:
+            os.environ.pop("OPENROUTER_API_KEY", None)
+        else:
             os.environ["OPENROUTER_API_KEY"] = old_key
-    checks.append("runner_fail_closed_before_network:PASS")
+    checks.append("runner_pre_network_gate:AUTHORIZED_INTEGRITY_PASS")
+    checks.append("validation_network_access:NONE")
+    checks.append("validation_model_execution:NONE")
 
     source = (FB / "scope_forecastbench_shadow_runner.py").read_text(encoding="utf-8")
     gate_call = source.index("gate = validate_pre_network_gate()")
@@ -118,7 +142,7 @@ def main() -> None:
         "preregistration": FB / "scope_forecastbench_shadow01_preregistration.json",
         "amendment": FB / "scope_forecastbench_shadow01_preregistration_amendment_v0.2.json",
         "binding": FB / "scope_forecastbench_shadow01_target_binding.json",
-        "authorization_closed": FB / "scope_forecastbench_shadow01_authorization.json",
+        "authorization": FB / "scope_forecastbench_shadow01_authorization.json",
         "adapter": FB / "scope_forecastbench_adapter.py",
         "adapter_validation": FB / "scope_forecastbench_adapter_validation.py",
         "runner": FB / "scope_forecastbench_shadow_runner.py",
@@ -128,9 +152,9 @@ def main() -> None:
         "frozen_control": ROOT / "main.py",
     }
     record = {
-        "schema_version": "0.2",
+        "schema_version": "0.3",
         "shadow_id": "SCOPE-FB-SHADOW-01",
-        "status": "READY_FOR_RUNNER_FREEZE_GATE4_CLOSED",
+        "status": "POST_RUN_INTEGRITY_VALIDATED",
         "validated_at_utc": datetime.now(timezone.utc).isoformat(),
         "github_sha": os.environ.get("GITHUB_SHA"),
         "checks": checks,
@@ -139,7 +163,12 @@ def main() -> None:
         "target_content_accessed": False,
         "target_question_content_inspected": False,
         "real_model_execution": False,
-        "gate4_authorized": False,
+        "gate4_authorized": True,
+        "authorization_scope": auth.get("authorization_scope"),
+        "historical_authorization_mutated": False,
+        "frozen_forecasts_mutated": False,
+        "pair_selection_mutated": False,
+        "scoring_path_mutated": False,
     }
     output = OUTPUT_DIR / "scope_fb_shadow01_gate_validation.json"
     output.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
