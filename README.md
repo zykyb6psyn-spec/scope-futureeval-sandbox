@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> **SCOPE repository status:** this repository is a quarantined technical validation sandbox. It is **not** the canonical SCOPE codebase and must not be used as a general-purpose SCOPE repository. Automatic tournament/Cup scheduling is intentionally disabled; SCOPE-specific runs are authorization-gated and separated from active SCOPE forecasts and validation streams. See [SCOPE_REPOSITORY_STATUS.md](SCOPE_REPOSITORY_STATUS.md) and [SCOPE_SANDBOX_GOVERNANCE.md](SCOPE_SANDBOX_GOVERNANCE.md).
+
 # Simple Metaculus forecasting bot
 This repository contains a simple bot meant to get you started with creating your own bot for the AI Forecasting Tournament. Go to https://www.metaculus.com/futureeval/participate/ for more info and tournament rules (and then go to the  "Getting Started" section of our [resources](https://www.metaculus.com/notebooks/38928/ai-benchmark-resources/#want-to-join-the-ai-forecasting-benchmark) page).
 
